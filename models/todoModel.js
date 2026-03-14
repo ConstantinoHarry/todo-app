@@ -1,26 +1,37 @@
 const pool = require('../config/db');
 
-async function getAllTodos(userId, filters = {}) {
-  const allowedEnergyLevels = ['high', 'medium', 'low'];
-  const hasEnergyFilter = allowedEnergyLevels.includes(filters.energyLevel);
-
-  let sql = 'SELECT id, text, completed, energy_level, created_at, updated_at FROM todos WHERE user_id = ?';
+async function getAllTodos(userId) {
+  let sql = 'SELECT id, text, description, completed, energy_level, deadline, created_at, updated_at FROM todos WHERE user_id = ?';
   const params = [userId];
-
-  if (hasEnergyFilter) {
-    sql += ' AND energy_level = ?';
-    params.push(filters.energyLevel);
-  }
 
   sql += ' ORDER BY completed ASC, created_at DESC';
 
   const [rows] = await pool.query(sql, params);
-  return rows;
+
+  if (rows.length === 0) {
+    return rows;
+  }
+
+  // Fetch all subtasks for these todos in one query
+  const todoIds = rows.map((r) => r.id);
+  const [subtaskRows] = await pool.query(
+    'SELECT id, todo_id, text, completed, created_at FROM subtasks WHERE todo_id IN (?) AND user_id = ? ORDER BY created_at ASC',
+    [todoIds, userId]
+  );
+
+  // Group subtasks by todo_id
+  const subtaskMap = {};
+  for (const s of subtaskRows) {
+    if (!subtaskMap[s.todo_id]) subtaskMap[s.todo_id] = [];
+    subtaskMap[s.todo_id].push(s);
+  }
+
+  return rows.map((r) => ({ ...r, subtasks: subtaskMap[r.id] || [] }));
 }
 
-async function createTodo(userId, text, energyLevel) {
-  const sql = 'INSERT INTO todos (user_id, text, energy_level) VALUES (?, ?, ?)';
-  const [result] = await pool.query(sql, [userId, text, energyLevel]);
+async function createTodo(userId, text, description, energyLevel, deadline) {
+  const sql = 'INSERT INTO todos (user_id, text, description, energy_level, deadline) VALUES (?, ?, ?, ?, ?)';
+  const [result] = await pool.query(sql, [userId, text, description || null, energyLevel, deadline || null]);
   return result.insertId;
 }
 
@@ -30,13 +41,13 @@ async function toggleTodo(userId, id) {
   return result.affectedRows;
 }
 
-async function updateTodo(userId, id, text, energyLevel) {
+async function updateTodo(userId, id, text, energyLevel, deadline) {
   const sql = `
     UPDATE todos
-    SET text = ?, energy_level = ?, updated_at = CURRENT_TIMESTAMP
+    SET text = ?, energy_level = ?, deadline = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ? AND user_id = ?
   `;
-  const [result] = await pool.query(sql, [text, energyLevel, id, userId]);
+  const [result] = await pool.query(sql, [text, energyLevel, deadline || null, id, userId]);
   return result.affectedRows;
 }
 

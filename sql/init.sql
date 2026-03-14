@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS todos (
   id INT PRIMARY KEY AUTO_INCREMENT,
   user_id INT NOT NULL,
   text VARCHAR(255) NOT NULL,
+  description TEXT DEFAULT NULL,
   completed BOOLEAN DEFAULT FALSE,
   energy_level ENUM('high', 'medium', 'low') DEFAULT 'medium',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -146,6 +147,65 @@ SET @stmt = (
   )
   FROM information_schema.STATISTICS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND INDEX_NAME = 'idx_users_github_id_unique'
+);
+PREPARE s FROM @stmt;
+EXECUTE s;
+DEALLOCATE PREPARE s;
+
+-- --------------------------------------------------------
+-- Deadlines & Subtasks
+-- --------------------------------------------------------
+
+-- Add deadline column to todos
+SET @stmt = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE todos ADD COLUMN deadline DATETIME DEFAULT NULL',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'todos' AND COLUMN_NAME = 'deadline'
+);
+PREPARE s FROM @stmt;
+EXECUTE s;
+DEALLOCATE PREPARE s;
+
+-- Add description column to todos
+SET @stmt = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE todos ADD COLUMN description TEXT DEFAULT NULL',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'todos' AND COLUMN_NAME = 'description'
+);
+PREPARE s FROM @stmt;
+EXECUTE s;
+DEALLOCATE PREPARE s;
+
+-- Create subtasks table
+CREATE TABLE IF NOT EXISTS subtasks (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  todo_id INT NOT NULL,
+  user_id INT NOT NULL,
+  text VARCHAR(255) NOT NULL,
+  completed BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_subtasks_todo FOREIGN KEY (todo_id) REFERENCES todos(id) ON DELETE CASCADE,
+  CONSTRAINT fk_subtasks_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Index on subtasks(todo_id)
+SET @stmt = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'CREATE INDEX idx_subtasks_todo_id ON subtasks(todo_id)',
+    'SELECT 1'
+  )
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'subtasks' AND INDEX_NAME = 'idx_subtasks_todo_id'
 );
 PREPARE s FROM @stmt;
 EXECUTE s;

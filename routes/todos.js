@@ -10,4 +10,9 @@ router.patch('/todos/:id', todoController.updateTodo);
 router.delete('/todos/:id', todoController.deleteTodo);
 router.post('/todos/clear-completed', todoController.clearCompletedTodos);
 
+// Subtask routes
+router.post('/todos/:id/subtasks', todoController.createSubtask);
+router.patch('/todos/:id/subtasks/:sid/toggle', todoController.toggleSubtask);
+router.delete('/todos/:id/subtasks/:sid', todoController.deleteSubtask);
+
 module.exports = router;
