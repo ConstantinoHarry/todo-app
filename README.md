@@ -2,7 +2,8 @@
 
 A simple task manager built with Express, EJS, and MySQL. 
 
-This app was built to make day-to-day planning feel less overwhelming and more realistic.
+This app was built to make day-to-day planning feel less overwhelming and more realistic. The current application that inspired this was Microsoft Planner which is the current planner I use to keep track of my tasks. So the goal for this app is to be an enhanced version with the intention of being more intuitive, given the calendar view to see how months are packed with tasks, start of day function so that tasks are managed properly given what is due on that day as well as the energy level feature so tasks can be classified to which required a higher energy level for completion. I am confident that this application I created is something that I will actually use. 
+
 Instead of only storing tasks, it helps you decide *when* to do them (calendar view),
 *how demanding* they are (energy levels: high, medium, low), and what to do with unfinished work
 using carryover actions (do today, move tomorrow, or unschedule).
@@ -139,11 +140,11 @@ APP_BASE_URL=http://localhost:3000
 
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_USER=todo_user
-DB_PASSWORD=todo_pass_123
-DB_NAME=todo_app
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_NAME=your_db_name
 
-SESSION_SECRET=replace_with_a_long_random_secret
+SESSION_SECRET=your_long_random_session_secret
 ```
 
 OAuth (optional):
