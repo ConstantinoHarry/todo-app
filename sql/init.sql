@@ -103,6 +103,32 @@ DEALLOCATE PREPARE s;
 SET @stmt = (
   SELECT IF(
     COUNT(*) = 0,
+    'CREATE INDEX idx_todos_user_completed_created_at ON todos(user_id, completed, created_at)',
+    'SELECT 1'
+  )
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'todos' AND INDEX_NAME = 'idx_todos_user_completed_created_at'
+);
+PREPARE s FROM @stmt;
+EXECUTE s;
+DEALLOCATE PREPARE s;
+
+SET @stmt = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'CREATE INDEX idx_todos_user_deadline ON todos(user_id, deadline)',
+    'SELECT 1'
+  )
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'todos' AND INDEX_NAME = 'idx_todos_user_deadline'
+);
+PREPARE s FROM @stmt;
+EXECUTE s;
+DEALLOCATE PREPARE s;
+
+SET @stmt = (
+  SELECT IF(
+    COUNT(*) = 0,
     'CREATE INDEX idx_completed_tasks_user_id ON completed_tasks(user_id)',
     'SELECT 1'
   )
@@ -206,6 +232,19 @@ SET @stmt = (
   )
   FROM information_schema.STATISTICS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'subtasks' AND INDEX_NAME = 'idx_subtasks_todo_id'
+);
+PREPARE s FROM @stmt;
+EXECUTE s;
+DEALLOCATE PREPARE s;
+
+SET @stmt = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'CREATE INDEX idx_subtasks_user_id ON subtasks(user_id)',
+    'SELECT 1'
+  )
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'subtasks' AND INDEX_NAME = 'idx_subtasks_user_id'
 );
 PREPARE s FROM @stmt;
 EXECUTE s;

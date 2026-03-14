@@ -5,6 +5,7 @@ const router = express.Router();
 
 router.get('/', todoController.renderHome);
 router.post('/todos', todoController.createTodo);
+router.post('/todos/:id/carryover', todoController.applyCarryoverAction);
 router.patch('/todos/:id/toggle', todoController.toggleTodo);
 router.patch('/todos/:id', todoController.updateTodo);
 router.delete('/todos/:id', todoController.deleteTodo);

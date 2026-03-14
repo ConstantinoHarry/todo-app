@@ -51,6 +51,24 @@ async function updateTodo(userId, id, text, energyLevel, deadline) {
   return result.affectedRows;
 }
 
+async function getTodoById(userId, id) {
+  const [rows] = await pool.query(
+    'SELECT id, user_id, text, completed, energy_level, deadline, created_at, updated_at FROM todos WHERE id = ? AND user_id = ? LIMIT 1',
+    [id, userId]
+  );
+
+  return rows[0] || null;
+}
+
+async function updateTodoDeadline(userId, id, deadline) {
+  const [result] = await pool.query(
+    'UPDATE todos SET deadline = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
+    [deadline || null, id, userId]
+  );
+
+  return result.affectedRows;
+}
+
 async function deleteTodo(userId, id) {
   const [result] = await pool.query('DELETE FROM todos WHERE id = ? AND user_id = ?', [id, userId]);
   return result.affectedRows;
@@ -89,9 +107,11 @@ async function clearCompletedTodos(userId) {
 
 module.exports = {
   getAllTodos,
+  getTodoById,
   createTodo,
   toggleTodo,
   updateTodo,
+  updateTodoDeadline,
   deleteTodo,
   clearCompletedTodos
 };

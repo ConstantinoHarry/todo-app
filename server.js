@@ -76,6 +76,24 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(methodOverride('_method'));
+
+app.get('/healthz', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    uptime: process.uptime(),
+    env: appConfig.nodeEnv
+  });
+});
+
+app.get('/readyz', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    return res.status(200).json({ status: 'ready' });
+  } catch (error) {
+    return res.status(503).json({ status: 'not-ready' });
+  }
+});
+
 app.use(
   session({
     name: securityConfig.sessionName,
@@ -96,27 +114,8 @@ app.use(
 app.use(passport.initialize());
 app.use(csrfProtection);
 
-app.get('/healthz', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    uptime: process.uptime(),
-    env: appConfig.nodeEnv
-  });
-});
-
-app.get('/readyz', async (req, res) => {
-  try {
-    await pool.query('SELECT 1');
-    return res.status(200).json({ status: 'ready' });
-  } catch (error) {
-    return res.status(503).json({ status: 'not-ready' });
-  }
-});
-
 app.use('/login', authLimiter);
 app.use('/register', authLimiter);
-app.use('/forgot-password', authLimiter);
-app.use('/reset-password', authLimiter);
 
 app.use((req, res, next) => {
   res.locals.isAuthenticated = Boolean(req.session && req.session.user);
@@ -150,7 +149,23 @@ app.use((req, res) => {
     selectedView: 'required',
     selectedEnergyFilter: 'all',
     selectedDueFilter: 'all',
+    selectedProgressFilter: 'all',
+    selectedCalendarMonth: new Date().toISOString().slice(0, 7),
+    selectedCalendarDate: '',
     counts: { total: 0, completed: 0, open: 0 },
+    progressSummary: { total: 0, completed: 0, rate: 0 },
+    calendarView: {
+      monthKey: new Date().toISOString().slice(0, 7),
+      monthLabel: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+      weekdayLabels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+      weeks: [],
+      todayMonthKey: new Date().toISOString().slice(0, 7),
+      todayDateKey: new Date().toISOString().slice(0, 10),
+      prevMonthKey: new Date().toISOString().slice(0, 7),
+      nextMonthKey: new Date().toISOString().slice(0, 7),
+      scheduledTaskCount: 0
+    },
+    calendarAgenda: null,
     error: 'Page not found.',
     success: '',
     returnTo: '/'

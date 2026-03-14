@@ -550,6 +550,99 @@ body.focus-mode {
   border-radius: 999px;
 }
 
+.carryover-card {
+  border-color: #c7d2fe;
+  background:
+    radial-gradient(circle at 100% 0, rgba(99, 102, 241, 0.1), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+}
+
+.carryover-heading {
+  margin-bottom: 14px;
+}
+
+.carryover-summary {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.carryover-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.carryover-pill-overdue {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.carryover-pill-today {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e3a8a;
+}
+
+.carryover-group + .carryover-group {
+  margin-top: 14px;
+}
+
+.carryover-group-title {
+  font-size: 0.95rem;
+  margin-bottom: 10px;
+  color: var(--text);
+}
+
+.carryover-list {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.carryover-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+}
+
+.carryover-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.carryover-task {
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.carryover-deadline {
+  margin-top: 4px;
+  color: var(--text-soft);
+  font-size: 0.88rem;
+}
+
+.carryover-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .form-field {
   display: grid;
   gap: 8px;
@@ -933,6 +1026,30 @@ body.focus-mode .progress-card-score {
   border-color: rgba(96, 165, 250, 0.26);
 }
 
+body.focus-mode .carryover-card {
+  border-color: rgba(99, 102, 241, 0.4);
+  background:
+    radial-gradient(circle at 100% 0, rgba(99, 102, 241, 0.2), transparent 34%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.9) 0%, rgba(17, 24, 39, 0.86) 100%);
+}
+
+body.focus-mode .carryover-item {
+  background: rgba(15, 23, 42, 0.76);
+  border-color: rgba(71, 85, 105, 0.56);
+}
+
+body.focus-mode .carryover-pill-overdue {
+  background: rgba(127, 29, 29, 0.2);
+  border-color: rgba(248, 113, 113, 0.35);
+  color: #fecaca;
+}
+
+body.focus-mode .carryover-pill-today {
+  background: rgba(30, 64, 175, 0.26);
+  border-color: rgba(96, 165, 250, 0.42);
+  color: #bfdbfe;
+}
+
 body.focus-mode .progress-score-label {
   color: #93c5fd;
 }
@@ -1000,6 +1117,39 @@ body.focus-mode .calendar-agenda,
 body.focus-mode .calendar-agenda-item {
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.88) 0%, rgba(17, 24, 39, 0.84) 100%);
   border-color: rgba(71, 85, 105, 0.52);
+}
+
+body.focus-mode .calendar-agenda-add-panel,
+body.focus-mode .calendar-agenda-edit-panel {
+  background: rgba(15, 23, 42, 0.74);
+  border-color: rgba(71, 85, 105, 0.52);
+}
+
+body.focus-mode .calendar-agenda-add-panel summary,
+body.focus-mode .calendar-agenda-edit-panel summary {
+  color: #7dd3fc;
+}
+
+body.focus-mode .calendar-agenda-add-panel summary::-webkit-details-marker,
+body.focus-mode .calendar-agenda-edit-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+body.focus-mode .calendar-agenda-add-form,
+body.focus-mode .calendar-agenda-edit-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+body.focus-mode .calendar-agenda-add-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+body.focus-mode .calendar-agenda-add-btn {
+  justify-self: flex-start;
 }
 
 body.focus-mode .calendar-agenda-item.is-completed {
@@ -1094,6 +1244,16 @@ body.focus-mode .subtask-delete-btn:hover {
 
 body.focus-mode .task-modal-backdrop {
   background: rgba(2, 6, 23, 0.72);
+}
+
+body.focus-mode .calendar-agenda-modal-backdrop {
+  background: rgba(2, 6, 23, 0.72);
+}
+
+body.focus-mode .calendar-agenda-modal {
+  background: var(--surface-strong);
+  border-color: rgba(71, 85, 105, 0.6);
+  box-shadow: var(--shadow-lg);
 }
 
 body.focus-mode .auth-panel-brand {
@@ -1284,6 +1444,7 @@ body.modal-open {
   list-style: none;
   margin-top: 6px;
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -1491,6 +1652,28 @@ body.modal-open {
   text-align: center;
 }
 
+.calendar-agenda-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2rem;
+  background: rgba(15, 23, 42, 0.52);
+}
+
+.calendar-agenda-modal {
+  width: min(920px, 96vw);
+  max-height: calc(100vh - 2.4rem);
+  overflow-y: auto;
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+  box-shadow: var(--shadow-lg);
+  padding: 1.3rem;
+}
+
 .calendar-agenda-header {
   display: flex;
   justify-content: space-between;
@@ -1508,6 +1691,46 @@ body.modal-open {
 
 .calendar-agenda-clear-btn {
   min-height: 40px;
+  text-decoration: none;
+}
+
+.calendar-agenda-add-panel,
+.calendar-agenda-edit-panel {
+  margin-bottom: 14px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.calendar-agenda-add-panel summary,
+.calendar-agenda-edit-panel summary {
+  cursor: pointer;
+  font-weight: 800;
+  color: var(--primary);
+  list-style: none;
+}
+
+.calendar-agenda-add-panel summary::-webkit-details-marker,
+.calendar-agenda-edit-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.calendar-agenda-add-form,
+.calendar-agenda-edit-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.calendar-agenda-add-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.calendar-agenda-add-btn {
+  justify-self: flex-start;
 }
 
 .calendar-agenda-list {
@@ -1582,9 +1805,10 @@ body.modal-open {
   border-radius: 18px;
   padding: 16px 18px;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 18px;
-  align-items: flex-start;
+  align-items: stretch;
+  min-height: 100%;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.96) 100%);
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
@@ -1619,8 +1843,9 @@ body.modal-open {
   gap: 10px;
   align-items: center;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  flex-shrink: 0;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: auto;
 }
 
 .inline-form {
@@ -2566,6 +2791,10 @@ body.modal-open {
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
+
+  .todo-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 980px) {
@@ -2661,9 +2890,8 @@ body.modal-open {
     padding: 18px;
   }
 
-  .todo-item {
-    flex-direction: column;
-    align-items: flex-start;
+  .todo-list {
+    grid-template-columns: 1fr;
   }
 
   .todo-actions {
@@ -2678,6 +2906,17 @@ body.modal-open {
   .task-toolbar {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .carryover-heading,
+  .carryover-item,
+  .carryover-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .carryover-actions .btn {
+    width: 100%;
   }
 
   .task-toolbar-primary {
@@ -2696,6 +2935,17 @@ body.modal-open {
 
   .task-modal {
     padding: 16px;
+  }
+
+  .calendar-agenda-modal-backdrop {
+    padding: 0.8rem;
+  }
+
+  .calendar-agenda-modal {
+    width: 100%;
+    max-height: calc(100vh - 1.6rem);
+    border-radius: 18px;
+    padding: 1rem;
   }
 
   .task-modal-row-2 {
@@ -2719,6 +2969,14 @@ body.modal-open {
 
   .calendar-nav-btn,
   .calendar-today-btn {
+    width: 100%;
+  }
+
+  .calendar-agenda-add-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-agenda-add-btn {
     width: 100%;
   }
 

@@ -14,6 +14,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const focusModeButton = document.querySelector('[data-focus-mode-toggle]');
   const focusModeLabel = document.querySelector('[data-focus-mode-label]');
   const focusModeStorageKey = 'todo-focus-mode-enabled';
+  const calendarAgendaModal = document.querySelector('[data-calendar-agenda-modal]');
+  const calendarAgendaCloseButton = document.querySelector('[data-calendar-agenda-close]');
+
+  function closeCalendarAgendaModal() {
+    if (!calendarAgendaCloseButton || !calendarAgendaCloseButton.href) {
+      return;
+    }
+
+    window.location.assign(calendarAgendaCloseButton.href);
+  }
 
   function applyFocusMode(enabled) {
     document.body.classList.toggle('focus-mode', enabled);
@@ -171,9 +181,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (calendarAgendaModal) {
+    calendarAgendaModal.addEventListener('click', (event) => {
+      if (event.target === calendarAgendaModal) {
+        closeCalendarAgendaModal();
+      }
+    });
+  }
+
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && addTaskModal && !addTaskModal.hidden) {
       closeAddTaskModal();
+      return;
+    }
+
+    if (event.key === 'Escape' && calendarAgendaModal) {
+      closeCalendarAgendaModal();
     }
   });
 

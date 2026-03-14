@@ -13,10 +13,6 @@ router.get('/auth/google', requireGuest, authController.startGoogleAuth);
 router.get('/auth/google/callback', requireGuest, authController.googleAuthCallback);
 router.get('/auth/github', requireGuest, authController.startGithubAuth);
 router.get('/auth/github/callback', requireGuest, authController.githubAuthCallback);
-router.get('/forgot-password', requireGuest, authController.renderForgotPassword);
-router.post('/forgot-password', requireGuest, authController.requestPasswordReset);
-router.get('/reset-password/:token', requireGuest, authController.renderResetPassword);
-router.post('/reset-password/:token', requireGuest, authController.resetPassword);
 router.post('/logout', requireAuth, authController.logout);
 
 module.exports = router;

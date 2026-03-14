@@ -1,8 +1,10 @@
 const {
   getAllTodos,
+  getTodoById,
   createTodo: createTodoModel,
   toggleTodo: toggleTodoModel,
   updateTodo: updateTodoModel,
+  updateTodoDeadline: updateTodoDeadlineModel,
   deleteTodo: deleteTodoModel,
   clearCompletedTodos: clearCompletedTodosModel
 } = require('../models/todoModel');
@@ -17,7 +19,8 @@ const ALLOWED_ENERGY_LEVELS = ['high', 'medium', 'low'];
 const ALLOWED_LIST_VIEWS = ['required', 'completed', 'calendar'];
 const ALLOWED_ENERGY_FILTERS = ['all', ...ALLOWED_ENERGY_LEVELS];
 const ALLOWED_DUE_FILTERS = ['all', 'today', 'overdue', 'upcoming', 'none'];
-const ALLOWED_PROGRESS_FILTERS = ['all', 'today', 'week'];
+const ALLOWED_PROGRESS_FILTERS = ['all', 'today', 'week', 'month'];
+const ALLOWED_CARRYOVER_ACTIONS = ['do-today', 'move-tomorrow', 'unschedule', 'park'];
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function parseDeadline(raw) {
@@ -161,6 +164,69 @@ function normalizeCalendarDate(raw) {
   return getDateKey(date) === raw ? raw : '';
 }
 
+function formatDateForSql(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+function getDeadlineTimeParts(deadline) {
+  if (!deadline) {
+    return { hours: 9, minutes: 0 };
+  }
+
+  const date = new Date(deadline);
+
+  if (Number.isNaN(date.getTime())) {
+    return { hours: 9, minutes: 0 };
+  }
+
+  return {
+    hours: date.getHours(),
+    minutes: date.getMinutes()
+  };
+}
+
+function buildCarryoverReview(allTodos) {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+  const openScheduledTodos = allTodos
+    .filter((todo) => !todo.completed && todo.deadline)
+    .map((todo) => {
+      const deadlineDate = new Date(todo.deadline);
+
+      if (Number.isNaN(deadlineDate.getTime())) {
+        return null;
+      }
+
+      return {
+        ...todo,
+        _deadlineDate: deadlineDate
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => left._deadlineDate - right._deadlineDate);
+
+  const overdueTasks = openScheduledTodos.filter((todo) => todo._deadlineDate < todayStart);
+  const dueTodayTasks = openScheduledTodos.filter(
+    (todo) => todo._deadlineDate >= todayStart && todo._deadlineDate < tomorrowStart
+  );
+
+  return {
+    overdueTasks,
+    dueTodayTasks,
+    overdueCount: overdueTasks.length,
+    dueTodayCount: dueTodayTasks.length,
+    totalCount: overdueTasks.length + dueTodayTasks.length
+  };
+}
+
 function getListPath({ view, energy, due, progress, month, date }) {
   const params = new URLSearchParams();
 
@@ -249,6 +315,8 @@ function getProgressSummary(allTodos, progressFilter) {
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   const weekEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
   const scopedTodos = allTodos.filter((todo) => {
     if (progressFilter === 'all') {
@@ -271,6 +339,10 @@ function getProgressSummary(allTodos, progressFilter) {
 
     if (progressFilter === 'week') {
       return deadlineDate >= todayStart && deadlineDate < weekEnd;
+    }
+
+    if (progressFilter === 'month') {
+      return deadlineDate >= monthStart && deadlineDate < nextMonthStart;
     }
 
     return true;
@@ -458,6 +530,7 @@ async function renderHome(req, res) {
     const progressSummary = getProgressSummary(allTodos, selectedProgressFilter);
     const calendarView = buildCalendarView(visibleTodos, selectedCalendarMonth, selectedCalendarDate);
     const calendarAgenda = buildCalendarAgenda(visibleTodos, selectedCalendarDate);
+    const carryoverReview = buildCarryoverReview(allTodos);
 
     const error = typeof req.query.error === 'string' ? req.query.error : '';
     const success = typeof req.query.success === 'string' ? req.query.success : '';
@@ -486,6 +559,7 @@ async function renderHome(req, res) {
       progressSummary,
       calendarView,
       calendarAgenda,
+      carryoverReview,
       error,
       success,
       returnTo
@@ -509,10 +583,91 @@ async function renderHome(req, res) {
       progressSummary: { total: 0, completed: 0, rate: 0 },
       calendarView: buildCalendarView([], getMonthKey(new Date()), ''),
       calendarAgenda: null,
+      carryoverReview: {
+        overdueTasks: [],
+        dueTodayTasks: [],
+        overdueCount: 0,
+        dueTodayCount: 0,
+        totalCount: 0
+      },
       error: 'Unable to load todos right now. Please try again.',
       success: '',
       returnTo: '/'
     });
+  }
+}
+
+async function applyCarryoverAction(req, res) {
+  const returnTo = getSafeReturnTo(req.body.returnTo || '/');
+
+  try {
+    const userId = req.session && req.session.user ? req.session.user.id : null;
+    if (!userId) {
+      return res.redirect('/login?error=' + encodeURIComponent('Please login to continue.'));
+    }
+
+    const id = Number.parseInt(req.params.id, 10);
+    const action = typeof req.body.action === 'string' ? req.body.action : '';
+
+    if (Number.isNaN(id)) {
+      return res.redirect(addMessageToPath(returnTo, 'error', 'Invalid task ID.'));
+    }
+
+    if (!ALLOWED_CARRYOVER_ACTIONS.includes(action)) {
+      return res.redirect(addMessageToPath(returnTo, 'error', 'Invalid carryover action.'));
+    }
+
+    const todo = await getTodoById(userId, id);
+
+    if (!todo) {
+      return res.redirect(addMessageToPath(returnTo, 'error', 'Task not found.'));
+    }
+
+    if (todo.completed) {
+      return res.redirect(addMessageToPath(returnTo, 'error', 'Completed tasks cannot be rescheduled from carryover.'));
+    }
+
+    const now = new Date();
+    const timeParts = getDeadlineTimeParts(todo.deadline);
+    let nextDeadline = null;
+    let successMessage = 'Task updated.';
+
+    if (action === 'do-today') {
+      const todayDeadline = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        timeParts.hours,
+        timeParts.minutes,
+        0
+      );
+      nextDeadline = formatDateForSql(todayDeadline);
+      successMessage = 'Task scheduled for today.';
+    }
+
+    if (action === 'move-tomorrow') {
+      const tomorrowDeadline = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() + 1,
+        timeParts.hours,
+        timeParts.minutes,
+        0
+      );
+      nextDeadline = formatDateForSql(tomorrowDeadline);
+      successMessage = 'Task moved to tomorrow.';
+    }
+
+    if (action === 'unschedule' || action === 'park') {
+      nextDeadline = null;
+      successMessage = 'Task unscheduled (deadline removed).';
+    }
+
+    await updateTodoDeadlineModel(userId, id, nextDeadline);
+    return res.redirect(addMessageToPath(returnTo, 'success', successMessage));
+  } catch (error) {
+    console.error('Failed to apply carryover action:', error);
+    return res.redirect(addMessageToPath(returnTo, 'error', 'Unable to update task from carryover review right now.'));
   }
 }
 
@@ -748,6 +903,7 @@ module.exports = {
   createTodo,
   toggleTodo,
   updateTodo,
+  applyCarryoverAction,
   deleteTodo,
   clearCompletedTodos,
   createSubtask,

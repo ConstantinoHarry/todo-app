@@ -35,7 +35,6 @@ Not every task requires the same mental effort. On busy or low-energy days, this
 - CSRF protection for all mutating forms
 - Rate limiting on authentication routes
 - Secure headers via Helmet
-- Password reset flow with expiring token support
 - Google and GitHub OAuth login buttons (Passport-based)
 
 ## Tech stack
@@ -127,8 +126,6 @@ SESSION_MAX_AGE_MS=28800000
 SESSION_SAME_SITE=lax
 SESSION_SECURE_COOKIE=false
 SESSION_COOKIE_DOMAIN=
-RESET_PASSWORD_URL_BASE=http://localhost:3000
-RESET_TOKEN_TTL_MINUTES=60
 AUTH_RATE_LIMIT_WINDOW_MS=900000
 AUTH_RATE_LIMIT_MAX=10
 GLOBAL_RATE_LIMIT_WINDOW_MS=900000
