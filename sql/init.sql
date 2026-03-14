@@ -30,5 +30,5 @@ CREATE TABLE IF NOT EXISTS completed_tasks (
   CONSTRAINT fk_completed_tasks_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_todos_user_id ON todos(user_id);
-CREATE INDEX idx_completed_tasks_user_id ON completed_tasks(user_id);
+CREATE INDEX IF NOT EXISTS idx_todos_user_id ON todos(user_id);
+CREATE INDEX IF NOT EXISTS idx_completed_tasks_user_id ON completed_tasks(user_id);
