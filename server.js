@@ -13,6 +13,7 @@ const authRoutes = require('./routes/auth');
 const todoRoutes = require('./routes/todos');
 const { requireAuth } = require('./middleware/auth');
 const configurePassport = require('./config/passport');
+const { startReminderScheduler } = require('./services/reminderService');
 const pool = require('./config/db');
 const {
   getAppConfig,
@@ -174,4 +175,5 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on ${appConfig.appBaseUrl}`);
+  startReminderScheduler();
 });

@@ -1,136 +1,148 @@
-# todo-app
+# Todo App
 
-A simple, production-ready full-stack todo app built with Express, MySQL, and EJS.
+A simple task manager built with Express, EJS, and MySQL.
 
-It includes core CRUD features and a practical custom workflow feature: **Daily Focus Mode with Energy Tracking**.
+It supports account login/signup, task planning, calendar view, carryover decisions, and due-date reminder notifications by email.
 
-## Why the custom feature matters
+## What this app does
 
-Not every task requires the same mental effort. On busy or low-energy days, this app helps you filter by energy level and limit visible tasks so you can keep moving without overload.
+- Create, edit, complete, and delete tasks
+- Add subtasks under each task
+- Set energy level (`high`, `medium`, `low`) and due date/time
+- Switch between list views (`Required`, `Completed`, `Calendar`)
+- Use **Carryover Review** each day to decide: do today, move tomorrow, or unschedule
+- Receive a daily reminder notification email for tasks due today (task name, description, and subtasks)
 
-### Daily Focus Mode with Energy Tracking
+## Feature walkthrough
 
-- Every task has an energy level:
-  - `high` → ⚡ High Energy
-  - `medium` → 😊 Medium Energy
-  - `low` → 😴 Low Energy
-- Focus mode can be toggled on/off.
-- You can filter by energy level.
-- Budget limits in focus mode:
-  - High: up to 3 tasks
-  - Medium: up to 2 tasks
-  - Low: up to 1 task
-- “Clear for Today” archives completed tasks to `completed_tasks` and removes them from `todos`.
+### 1) Task planning and tracking
 
-## Features implemented
+- Create tasks with name, optional description, energy level, due date/time, and subtasks.
+- Mark tasks complete from the main list or calendar agenda.
+- Edit tasks inline when priorities or deadlines change.
+- View progress in the overview card with filters like due today, due this week, or due this month.
 
-- Add tasks with text + energy level
-- Toggle complete/incomplete
-- Delete tasks
-- List tasks with completion state and badges
-- Persist all data in MySQL
-- Focus mode filtering with per-energy task budget
-- Archive completed tasks via transaction-safe clear action
-- Basic validation and user-facing error feedback
-- CSRF protection for all mutating forms
-- Rate limiting on authentication routes
-- Secure headers via Helmet
-- Google and GitHub OAuth login buttons (Passport-based)
+### 2) Calendar view
 
-## Tech stack
+- See all scheduled tasks in a monthly calendar.
+- Open any date to view that day’s agenda in a modal.
+- From the modal, you can add a task for that date, edit existing tasks, or mark tasks done.
 
-- Node.js
-- Express
-- MySQL (`mysql2/promise`)
-- EJS
-- HTML5 + CSS3 + Vanilla JavaScript
-- Railway-ready env compatibility
+### 3) Carryover Review (custom feature)
 
-## Project structure
+- At the start of the day, the app highlights overdue and due-today work.
+- For each task, you can make a quick decision:
+  - **Do Today**
+  - **Move Tomorrow**
+  - **Unschedule**
+- This helps keep the daily list realistic instead of letting overdue tasks pile up.
 
-```text
-todo-app/
-├── public/
-│   ├── css/
-│   │   └── style.css
-│   ├── js/
-│   │   └── main.js
-│   └── images/
-├── views/
-│   ├── index.ejs
-│   └── partials/
-│       ├── header.ejs
-│       └── footer.ejs
-├── routes/
-│   └── todos.js
-├── models/
-│   └── todoModel.js
-├── config/
-│   └── db.js
-├── .env
-├── .env.example
-├── .gitignore
-├── package.json
-├── server.js
-└── README.md
+### 4) Reminder notifications
+
+- A scheduler checks for open tasks due today.
+- Each user gets at most one reminder email per day.
+- Reminder email includes task title, due time, description, and subtasks.
+- Send logs prevent duplicate reminders on the same day.
+
+## Login and signup flow
+
+You can access the app in two ways:
+
+- Email + password registration/login
+- OAuth login with Google or GitHub
+
+After login, each user sees only their own tasks.
+
+## Reminder notifications (email)
+
+The app has a reminder scheduler.
+
+- It checks for open tasks due today
+- Sends one reminder email per user per day
+- Each email includes:
+  - task title
+  - task description
+  - subtasks with completion status
+
+Reminder logging is stored in the database so the same user does not get duplicate reminders on the same day.
+
+## Database schema
+
+Main tables:
+
+- `users`: account information (email/password and optional OAuth IDs)
+- `todos`: core tasks for each user (text, description, status, energy level, deadline)
+- `subtasks`: checklist items attached to a task
+- `completed_tasks`: archived completed tasks
+- `email_reminder_logs`: tracks daily reminder sends per user
+
+Relationships:
+
+- One user has many todos
+- One todo has many subtasks
+- Deleting a user deletes their tasks and related records (cascade)
+
+Schema is managed by `sql/init.sql`.
+
+## Quick start
+
+1. Install dependencies
+
+```bash
+npm install
 ```
 
-## Local setup
+2. Copy environment template
 
-1. Install dependencies:
+```bash
+cp .env.example .env
+```
 
-   ```bash
-   npm install
-   ```
+3. Fill `.env` with database and auth settings
 
-2. Create local env file:
+4. Initialize database schema
 
-   ```bash
-   cp .env.example .env
-   ```
+```bash
+mysql -h 127.0.0.1 -P 3306 -u <user> -p <database> < sql/init.sql
+```
 
-3. Fill `.env` with your local MySQL credentials.
+5. Start server
 
-4. Create database and tables (schema below).
+```bash
+npm run dev
+```
 
-5. Run app:
+Open: `http://localhost:3000`
 
-   ```bash
-   npm run dev
-   ```
+## 60-second demo flow
 
-6. Open:
+1. Sign up (or log in with Google/GitHub).
+2. Create 2–3 tasks with due dates and subtasks.
+3. Open Calendar and click a date to manage tasks in the agenda modal.
+4. Use Carryover Review to move one task to tomorrow and unschedule another.
+5. Trigger/verify reminder email for due-today tasks.
 
-   - `http://localhost:3000`
+## Required environment variables
 
-## Environment variables
-
-Primary local variables:
+Core app:
 
 ```env
 PORT=3000
 NODE_ENV=development
 APP_BASE_URL=http://localhost:3000
-TRUST_PROXY=0
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your_mysql_password
-DB_NAME=todo_app
-DB_CONNECTION_LIMIT=10
-DB_SSL=false
-DB_SSL_REJECT_UNAUTHORIZED=true
-SESSION_SECRET=replace_with_a_long_random_secret
-SESSION_NAME=todo.sid
-SESSION_MAX_AGE_MS=28800000
-SESSION_SAME_SITE=lax
-SESSION_SECURE_COOKIE=false
-SESSION_COOKIE_DOMAIN=
-AUTH_RATE_LIMIT_WINDOW_MS=900000
-AUTH_RATE_LIMIT_MAX=10
-GLOBAL_RATE_LIMIT_WINDOW_MS=900000
-GLOBAL_RATE_LIMIT_MAX=200
 
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=todo_user
+DB_PASSWORD=todo_pass_123
+DB_NAME=todo_app
+
+SESSION_SECRET=replace_with_a_long_random_secret
+```
+
+OAuth (optional):
+
+```env
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback
@@ -140,111 +152,37 @@ GITHUB_CLIENT_SECRET=
 GITHUB_CALLBACK_URL=http://localhost:3000/auth/github/callback
 ```
 
-Also supported for Railway-style MySQL environments:
+Reminder notifications (optional):
 
-- `MYSQLHOST`
-- `MYSQLPORT`
-- `MYSQLUSER`
-- `MYSQLPASSWORD`
-- `MYSQLDATABASE`
+```env
+REMINDER_ENABLED=true
+REMINDER_CHECK_INTERVAL_MS=900000
 
-`config/db.js` checks `DB_*` first, then falls back to `MYSQL*` variables.
-
-## Database schema
-
-```sql
-CREATE DATABASE IF NOT EXISTS todo_app;
-USE todo_app;
-
-CREATE TABLE IF NOT EXISTS users (
-   id INT PRIMARY KEY AUTO_INCREMENT,
-   email VARCHAR(255) NOT NULL UNIQUE,
-   password_hash VARCHAR(255) NOT NULL,
-   google_id VARCHAR(191) DEFAULT NULL,
-   github_id VARCHAR(191) DEFAULT NULL,
-   reset_password_token_hash VARCHAR(64) DEFAULT NULL,
-   reset_password_expires_at DATETIME DEFAULT NULL,
-   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS todos (
-  id INT PRIMARY KEY AUTO_INCREMENT,
-   user_id INT NOT NULL,
-  text VARCHAR(255) NOT NULL,
-  completed BOOLEAN DEFAULT FALSE,
-  energy_level ENUM('high', 'medium', 'low') DEFAULT 'medium',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-   CONSTRAINT fk_todos_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS completed_tasks (
-  id INT PRIMARY KEY AUTO_INCREMENT,
-   user_id INT NOT NULL,
-  original_id INT,
-  text VARCHAR(255) NOT NULL,
-  energy_level ENUM('high', 'medium', 'low'),
-   completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-   CONSTRAINT fk_completed_tasks_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_todos_user_id ON todos(user_id);
-CREATE INDEX idx_completed_tasks_user_id ON completed_tasks(user_id);
-CREATE INDEX idx_users_reset_token_hash ON users(reset_password_token_hash);
-CREATE UNIQUE INDEX idx_users_google_id_unique ON users(google_id);
-CREATE UNIQUE INDEX idx_users_github_id_unique ON users(github_id);
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_app_password
+SMTP_FROM=Todo App <your_email@gmail.com>
 ```
 
-## OAuth provider setup
+For Gmail, `SMTP_PASS` should be a **Google App Password**.
 
-For Google OAuth:
+## Project structure (high level)
 
-- Create OAuth credentials in Google Cloud Console
-- Authorized redirect URI: `http://localhost:3000/auth/google/callback`
-- Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
+```text
+config/       app configuration (env, DB, passport)
+controllers/  request handlers
+models/       database queries
+routes/       route mapping
+services/     reminder scheduler / email service
+views/        EJS templates
+public/       CSS and JS assets
+sql/          schema initialization
+```
 
-For GitHub OAuth:
+## Notes
 
-- Create an OAuth app in GitHub Developer Settings
-- Authorization callback URL: `http://localhost:3000/auth/github/callback`
-- Set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`
-
-## Railway deployment notes
-
-1. Push project to GitHub.
-2. Create a Railway project and provision MySQL.
-3. Add app service and connect the repository.
-4. Ensure env vars are present (`MYSQL*` usually auto-provided by Railway MySQL).
-5. Railway runs `npm install` and starts the app with:
-   - `npm start`
-6. Confirm app is healthy and DB connection works.
-
-## Production readiness checklist
-
-- Set `NODE_ENV=production`
-- Set a strong `SESSION_SECRET` (minimum 32 random characters)
-- Set `APP_BASE_URL` to your public HTTPS URL
-- Set `TRUST_PROXY=1` when deploying behind reverse proxy/load balancer
-- Set `SESSION_SECURE_COOKIE=true` in production
-- If DB requires TLS, set `DB_SSL=true`
-- Run health checks:
-   - `/healthz` for liveness
-   - `/readyz` for DB readiness
-
-## Security and production notes
-
-- `.env` is ignored by git and must never be committed.
-- All SQL uses parameterized queries.
-- `clear-completed` uses a DB transaction to avoid partial archive/delete states.
-- Sessions are regenerated on login to reduce fixation risk.
-- Password reset links are single-use via hashed token + expiry.
-- Error handling is intentionally simple but user-friendly for a small project.
-
-## Future improvements
-
-- Add due dates and sort options
-- Add search and pagination
-- Add edit task text
-- Add auth for personal task lists
-- Add automated tests (routes + model integration)
+- `.env` is ignored by git and should never be committed.
+- Security middleware includes CSRF protection, Helmet headers, sessions, and rate limiting.
+- Health endpoints are available at `/healthz` and `/readyz`.

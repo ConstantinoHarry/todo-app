@@ -86,6 +86,31 @@ function getSecurityConfig() {
   };
 }
 
+function getMailConfig() {
+  const normalizedHost = typeof process.env.SMTP_HOST === 'string' ? process.env.SMTP_HOST.trim() : '';
+  const normalizedUser = typeof process.env.SMTP_USER === 'string' ? process.env.SMTP_USER.trim() : '';
+  const normalizedPassRaw = typeof process.env.SMTP_PASS === 'string' ? process.env.SMTP_PASS.trim() : '';
+  const normalizedPass = normalizedPassRaw.replace(/\s+/g, '');
+  const normalizedFrom = typeof process.env.SMTP_FROM === 'string' ? process.env.SMTP_FROM.trim() : '';
+  const secureDefault = parseNumber(process.env.SMTP_PORT, 587) === 465;
+
+  return {
+    host: normalizedHost,
+    port: parseNumber(process.env.SMTP_PORT, 587),
+    secure: parseBoolean(process.env.SMTP_SECURE, secureDefault),
+    user: normalizedUser,
+    pass: normalizedPass,
+    from: normalizedFrom
+  };
+}
+
+function getReminderConfig() {
+  return {
+    enabled: parseBoolean(process.env.REMINDER_ENABLED, false),
+    checkIntervalMs: parseNumber(process.env.REMINDER_CHECK_INTERVAL_MS, 15 * 60 * 1000)
+  };
+}
+
 function validateProductionEnv() {
   if (!isProduction()) {
     return;
@@ -110,5 +135,7 @@ module.exports = {
   getAppConfig,
   getDbConfig,
   getSecurityConfig,
+  getMailConfig,
+  getReminderConfig,
   validateProductionEnv
 };

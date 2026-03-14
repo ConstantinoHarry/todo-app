@@ -87,6 +87,16 @@ CREATE TABLE IF NOT EXISTS completed_tasks (
   CONSTRAINT fk_completed_tasks_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS email_reminder_logs (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  reminder_date DATE NOT NULL,
+  tasks_count INT NOT NULL DEFAULT 0,
+  sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_email_reminder_logs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY uniq_email_reminder_user_date (user_id, reminder_date)
+);
+
 SET @stmt = (
   SELECT IF(
     COUNT(*) = 0,
@@ -134,6 +144,19 @@ SET @stmt = (
   )
   FROM information_schema.STATISTICS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'completed_tasks' AND INDEX_NAME = 'idx_completed_tasks_user_id'
+);
+PREPARE s FROM @stmt;
+EXECUTE s;
+DEALLOCATE PREPARE s;
+
+SET @stmt = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'CREATE INDEX idx_email_reminder_logs_date ON email_reminder_logs(reminder_date)',
+    'SELECT 1'
+  )
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'email_reminder_logs' AND INDEX_NAME = 'idx_email_reminder_logs_date'
 );
 PREPARE s FROM @stmt;
 EXECUTE s;
