@@ -23,17 +23,7 @@
             : selectedProgressFilter === 'week'
               ? 'Due this week'
               : 'All tasks';
-          var toDatetimeLocal = function(d) {
-            if (!d) return '';
-            var dt = new Date(d);
-            var pad = function(n) { return String(n).padStart(2, '0'); };
-            return dt.getFullYear() + '-' + pad(dt.getMonth() + 1) + '-' + pad(dt.getDate()) + 'T' + pad(dt.getHours()) + ':' + pad(dt.getMinutes());
-          };
-          var fmtDeadline = function(d) {
-            var dt = new Date(d);
-            return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' · ' + dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-          };
-          var buildListPath = function(viewValue) {
+          var buildViewPath = function(viewValue, monthValue, dateValue) {
             var params = [];
             if (viewValue && viewValue !== 'required') {
               params.push('view=' + encodeURIComponent(viewValue));
@@ -47,7 +37,26 @@
             if (selectedProgressFilter && selectedProgressFilter !== 'all') {
               params.push('progress=' + encodeURIComponent(selectedProgressFilter));
             }
+            if (monthValue) {
+              params.push('month=' + encodeURIComponent(monthValue));
+            }
+            if (dateValue) {
+              params.push('date=' + encodeURIComponent(dateValue));
+            }
             return params.length ? '/?' + params.join('&') : '/';
+          };
+          var toDatetimeLocal = function(d) {
+            if (!d) return '';
+            var dt = new Date(d);
+            var pad = function(n) { return String(n).padStart(2, '0'); };
+            return dt.getFullYear() + '-' + pad(dt.getMonth() + 1) + '-' + pad(dt.getDate()) + 'T' + pad(dt.getHours()) + ':' + pad(dt.getMinutes());
+          };
+          var fmtDeadline = function(d) {
+            var dt = new Date(d);
+            return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' · ' + dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+          };
+          var buildListPath = function(viewValue) {
+            return buildViewPath(viewValue, selectedCalendarMonth, selectedCalendarDate);
           };
         %>
 
@@ -156,12 +165,15 @@
                   <div class="task-view-toggle" role="group" aria-label="Task view toggle">
                     <a href="<%= buildListPath('required') %>" class="btn btn-ghost task-view-btn <%= selectedView === 'required' ? 'is-active' : '' %>">Required</a>
                     <a href="<%= buildListPath('completed') %>" class="btn btn-ghost task-view-btn <%= selectedView === 'completed' ? 'is-active' : '' %>">Completed</a>
+                    <a href="<%= buildViewPath('calendar', selectedCalendarMonth, selectedCalendarDate) %>" class="btn btn-ghost task-view-btn <%= selectedView === 'calendar' ? 'is-active' : '' %>">Calendar</a>
                   </div>
                 </div>
 
                 <form action="/" method="GET" class="task-filter-form">
                   <input type="hidden" name="view" value="<%= selectedView %>" />
                   <input type="hidden" name="progress" value="<%= selectedProgressFilter %>" />
+                  <input type="hidden" name="month" value="<%= selectedCalendarMonth %>" />
+                  <input type="hidden" name="date" value="<%= selectedCalendarDate %>" />
                   <label class="sr-only" for="listEnergyFilter">Energy filter</label>
                   <select id="listEnergyFilter" name="energy">
                     <option value="all" <%= selectedEnergyFilter === 'all' ? 'selected' : '' %>>All energy</option>
@@ -186,10 +198,14 @@
               <div class="section-heading">
                 <div>
                   <p class="section-kicker">Tasks</p>
-                  <h2><%= selectedView === 'completed' ? 'Completed Tasks' : 'Required Tasks' %></h2>
+                  <h2><%= selectedView === 'completed' ? 'Completed Tasks' : selectedView === 'calendar' ? 'Task Calendar' : 'Required Tasks' %></h2>
                   <p class="todo-meta">
-                    Showing <strong><%= visibleTodos.length %></strong>
-                    <%= selectedView === 'completed' ? 'completed' : 'required' %> task(s)
+                    <% if (selectedView === 'calendar') { %>
+                      Showing <strong><%= calendarView.scheduledTaskCount %></strong> scheduled task(s) in <strong><%= calendarView.monthLabel %></strong>
+                    <% } else { %>
+                      Showing <strong><%= visibleTodos.length %></strong>
+                      <%= selectedView === 'completed' ? 'completed' : 'required' %> task(s)
+                    <% } %>
                   </p>
                 </div>
 
@@ -202,7 +218,139 @@
                 <% } %>
               </div>
 
-              <% if (!visibleTodos.length) { %>
+              <% if (selectedView === 'calendar') { %>
+                <div class="calendar-toolbar">
+                  <div class="calendar-nav" role="navigation" aria-label="Calendar month navigation">
+                    <a href="<%= buildViewPath('calendar', calendarView.prevMonthKey) %>" class="btn btn-ghost calendar-nav-btn">&larr; Previous</a>
+                    <div class="calendar-nav-copy">
+                      <strong><%= calendarView.monthLabel %></strong>
+                      <span><%= calendarView.scheduledTaskCount %> scheduled task(s)</span>
+                    </div>
+                    <a href="<%= buildViewPath('calendar', calendarView.nextMonthKey) %>" class="btn btn-ghost calendar-nav-btn">Next &rarr;</a>
+                  </div>
+
+                  <% if (calendarView.monthKey !== calendarView.todayMonthKey) { %>
+                    <a href="<%= buildViewPath('calendar', calendarView.todayMonthKey, calendarView.todayDateKey) %>" class="btn btn-ghost calendar-today-btn">Jump to today</a>
+                  <% } %>
+                </div>
+
+                <% if (!calendarView.scheduledTaskCount) { %>
+                  <div class="empty-state-card calendar-empty-state">
+                    <p class="empty-state-title">No scheduled tasks found for this month.</p>
+                    <p class="empty-state">
+                      Add deadlines to tasks or adjust your filters to populate the calendar.
+                    </p>
+                  </div>
+                <% } %>
+
+                <section class="calendar-view" aria-label="Monthly task calendar">
+                  <div class="calendar-weekdays" aria-hidden="true">
+                    <% calendarView.weekdayLabels.forEach(function(label) { %>
+                      <span><%= label %></span>
+                    <% }); %>
+                  </div>
+
+                  <div class="calendar-grid">
+                    <% calendarView.weeks.forEach(function(week) { %>
+                      <% week.forEach(function(day) { %>
+                        <article class="calendar-day <%= day.inCurrentMonth ? '' : 'is-outside-month' %> <%= day.isToday ? 'is-today' : '' %> <%= day.isSelected ? 'is-selected' : '' %>">
+                          <div class="calendar-day-header">
+                            <a href="<%= buildViewPath('calendar', selectedCalendarMonth, day.dateKey) %>" class="calendar-day-link" aria-label="Open tasks for <%= day.dateKey %>">
+                              <span class="calendar-day-number"><%= day.dayNumber %></span>
+                            </a>
+                            <% if (day.tasks.length) { %>
+                              <span class="calendar-day-count"><%= day.tasks.length %></span>
+                            <% } %>
+                          </div>
+
+                          <div class="calendar-day-tasks">
+                            <% day.tasks.slice(0, 4).forEach(function(task) { %>
+                              <a href="<%= buildViewPath('calendar', selectedCalendarMonth, day.dateKey) %>" class="calendar-task-chip <%= task.completed ? 'is-completed' : '' %> energy-<%= task.energy_level %>">
+                                <span class="calendar-task-time"><%= task.timeLabel %></span>
+                                <span class="calendar-task-text"><%= task.text %></span>
+                              </a>
+                            <% }); %>
+
+                            <% if (day.tasks.length > 4) { %>
+                              <a href="<%= buildViewPath('calendar', selectedCalendarMonth, day.dateKey) %>" class="calendar-more-tasks">+<%= day.tasks.length - 4 %> more</a>
+                            <% } %>
+                          </div>
+                        </article>
+                      <% }); %>
+                    <% }); %>
+                  </div>
+                </section>
+
+                <% if (calendarAgenda) { %>
+                  <section class="calendar-agenda" aria-label="Selected date task details">
+                    <div class="calendar-agenda-header">
+                      <div>
+                        <p class="section-kicker">Agenda</p>
+                        <h3><%= calendarAgenda.label %></h3>
+                        <p class="todo-meta">Showing <strong><%= calendarAgenda.tasks.length %></strong> task(s) for this date.</p>
+                      </div>
+                      <a href="<%= buildViewPath('calendar', selectedCalendarMonth) %>" class="btn btn-ghost calendar-agenda-clear-btn">Clear selection</a>
+                    </div>
+
+                    <% if (!calendarAgenda.tasks.length) { %>
+                      <div class="empty-state-card calendar-empty-state">
+                        <p class="empty-state-title">No tasks scheduled for this day.</p>
+                        <p class="empty-state">Pick another date or add a deadline to a task.</p>
+                      </div>
+                    <% } else { %>
+                      <ul class="calendar-agenda-list">
+                        <% calendarAgenda.tasks.forEach(function(todo) { %>
+                          <li class="calendar-agenda-item <%= todo.completed ? 'is-completed' : '' %>">
+                            <div class="calendar-agenda-main">
+                              <div class="calendar-agenda-topline">
+                                <h4 class="calendar-agenda-title"><%= todo.text %></h4>
+                                <span class="badge badge-<%= todo.energy_level %>">
+                                  <%= todo.energy_level === 'high' ? '⚡ High Energy' : todo.energy_level === 'medium' ? '😊 Medium Energy' : '😴 Low Energy' %>
+                                </span>
+                              </div>
+
+                              <% if (todo.description) { %>
+                                <p class="calendar-agenda-description"><%= todo.description %></p>
+                              <% } %>
+
+                              <div class="calendar-agenda-meta-row">
+                                <% if (todo.deadline) { %>
+                                  <span class="deadline-badge <%= !todo.completed && new Date(todo.deadline) < new Date() ? 'is-overdue' : '' %>">
+                                    <%= !todo.completed && new Date(todo.deadline) < new Date() ? '⚠ Overdue' : '📅 Due' %> · <%= fmtDeadline(todo.deadline) %>
+                                  </span>
+                                <% } %>
+
+                                <% if ((todo.subtasks || []).length > 0) { %>
+                                  <span class="subtask-count"><%= (todo.subtasks || []).filter(function(s){ return s.completed; }).length %>/<%= (todo.subtasks || []).length %> subtasks done</span>
+                                <% } %>
+                              </div>
+                            </div>
+
+                            <div class="calendar-agenda-actions">
+                              <form action="/todos/<%= todo.id %>/toggle?_method=PATCH" method="POST" class="inline-form">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                                <input type="hidden" name="returnTo" value="<%= returnTo %>" />
+                                <button type="submit" class="btn btn-ghost"><%= todo.completed ? 'Reopen' : 'Mark done' %></button>
+                              </form>
+
+                              <form action="/todos/<%= todo.id %>?_method=DELETE" method="POST" class="inline-form">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                                <input type="hidden" name="returnTo" value="<%= returnTo %>" />
+                                <button type="submit" class="btn btn-ghost">Delete</button>
+                              </form>
+                            </div>
+                          </li>
+                        <% }); %>
+                      </ul>
+                    <% } %>
+                  </section>
+                <% } else { %>
+                  <section class="calendar-agenda calendar-agenda-placeholder" aria-label="Select a date to inspect tasks">
+                    <p class="empty-state-title">Select a date to inspect your schedule.</p>
+                    <p class="empty-state">Click any day or task chip in the calendar to open its task details here.</p>
+                  </section>
+                <% } %>
+              <% } else if (!visibleTodos.length) { %>
                 <div class="empty-state-card">
                   <p class="empty-state-title"><%= selectedView === 'completed' ? 'No completed tasks found.' : 'No required tasks found.' %></p>
                   <p class="empty-state">

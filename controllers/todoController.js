@@ -14,10 +14,11 @@ const {
 } = require('../models/subtaskModel');
 
 const ALLOWED_ENERGY_LEVELS = ['high', 'medium', 'low'];
-const ALLOWED_LIST_VIEWS = ['required', 'completed'];
+const ALLOWED_LIST_VIEWS = ['required', 'completed', 'calendar'];
 const ALLOWED_ENERGY_FILTERS = ['all', ...ALLOWED_ENERGY_LEVELS];
 const ALLOWED_DUE_FILTERS = ['all', 'today', 'overdue', 'upcoming', 'none'];
 const ALLOWED_PROGRESS_FILTERS = ['all', 'today', 'week'];
+const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function parseDeadline(raw) {
   if (!raw || typeof raw !== 'string' || raw.trim() === '') return null;
@@ -117,7 +118,50 @@ function normalizeProgressFilter(raw) {
   return ALLOWED_PROGRESS_FILTERS.includes(raw) ? raw : 'all';
 }
 
-function getListPath({ view, energy, due, progress }) {
+function getMonthKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+function getDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function normalizeCalendarMonth(raw) {
+  if (typeof raw !== 'string' || !/^\d{4}-\d{2}$/.test(raw)) {
+    return getMonthKey(new Date());
+  }
+
+  const [yearValue, monthValue] = raw.split('-');
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+    return getMonthKey(new Date());
+  }
+
+  return `${year}-${String(month).padStart(2, '0')}`;
+}
+
+function normalizeCalendarDate(raw) {
+  if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return '';
+  }
+
+  const date = new Date(`${raw}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return getDateKey(date) === raw ? raw : '';
+}
+
+function getListPath({ view, energy, due, progress, month, date }) {
   const params = new URLSearchParams();
 
   if (view && view !== 'required') {
@@ -134,6 +178,14 @@ function getListPath({ view, energy, due, progress }) {
 
   if (progress && progress !== 'all') {
     params.set('progress', progress);
+  }
+
+  if (month) {
+    params.set('month', month);
+  }
+
+  if (date) {
+    params.set('date', date);
   }
 
   const queryString = params.toString();
@@ -235,6 +287,147 @@ function getProgressSummary(allTodos, progressFilter) {
   };
 }
 
+function buildCalendarView(todos, monthKey, selectedDateKey) {
+  const normalizedMonth = normalizeCalendarMonth(monthKey);
+  const [yearValue, monthValue] = normalizedMonth.split('-');
+  const year = Number(yearValue);
+  const monthIndex = Number(monthValue) - 1;
+  const monthStart = new Date(year, monthIndex, 1);
+  const monthEnd = new Date(year, monthIndex + 1, 0);
+  const gridStart = new Date(year, monthIndex, 1 - monthStart.getDay());
+  const gridEnd = new Date(year, monthIndex, monthEnd.getDate() + (6 - monthEnd.getDay()));
+  const todayKey = getDateKey(new Date());
+
+  const tasksByDate = new Map();
+  let scheduledTaskCount = 0;
+
+  todos.forEach((todo) => {
+    if (!todo.deadline) {
+      return;
+    }
+
+    const deadlineDate = new Date(todo.deadline);
+
+    if (Number.isNaN(deadlineDate.getTime())) {
+      return;
+    }
+
+    const dateKey = getDateKey(deadlineDate);
+    const timeLabel = deadlineDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+
+    if (!tasksByDate.has(dateKey)) {
+      tasksByDate.set(dateKey, []);
+    }
+
+    tasksByDate.get(dateKey).push({
+      id: todo.id,
+      text: todo.text,
+      completed: Boolean(todo.completed),
+      energy_level: todo.energy_level,
+      timeLabel,
+      deadline: todo.deadline
+    });
+
+    scheduledTaskCount += 1;
+  });
+
+  tasksByDate.forEach((items) => {
+    items.sort((left, right) => {
+      if (left.completed !== right.completed) {
+        return left.completed ? 1 : -1;
+      }
+
+      return new Date(left.deadline) - new Date(right.deadline);
+    });
+  });
+
+  const weeks = [];
+  const cursor = new Date(gridStart);
+
+  while (cursor <= gridEnd) {
+    const week = [];
+
+    for (let index = 0; index < 7; index += 1) {
+      const dateKey = getDateKey(cursor);
+      week.push({
+        dateKey,
+        dayNumber: cursor.getDate(),
+        inCurrentMonth: cursor.getMonth() === monthIndex,
+        isToday: dateKey === todayKey,
+        isSelected: dateKey === selectedDateKey,
+        tasks: tasksByDate.get(dateKey) || []
+      });
+
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    weeks.push(week);
+  }
+
+  const prevMonth = new Date(year, monthIndex - 1, 1);
+  const nextMonth = new Date(year, monthIndex + 1, 1);
+
+  return {
+    monthKey: normalizedMonth,
+    monthLabel: monthStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+    weekdayLabels: WEEKDAY_LABELS,
+    weeks,
+    todayMonthKey: getMonthKey(new Date()),
+    todayDateKey: todayKey,
+    prevMonthKey: getMonthKey(prevMonth),
+    nextMonthKey: getMonthKey(nextMonth),
+    scheduledTaskCount
+  };
+}
+
+function buildCalendarAgenda(todos, selectedDateKey) {
+  if (!selectedDateKey) {
+    return null;
+  }
+
+  const selectedDate = new Date(`${selectedDateKey}T00:00:00`);
+
+  if (Number.isNaN(selectedDate.getTime())) {
+    return null;
+  }
+
+  const tasks = todos
+    .filter((todo) => {
+      if (!todo.deadline) {
+        return false;
+      }
+
+      const deadlineDate = new Date(todo.deadline);
+
+      if (Number.isNaN(deadlineDate.getTime())) {
+        return false;
+      }
+
+      return getDateKey(deadlineDate) === selectedDateKey;
+    })
+    .sort((left, right) => {
+      if (left.completed !== right.completed) {
+        return left.completed ? 1 : -1;
+      }
+
+      return new Date(left.deadline) - new Date(right.deadline);
+    });
+
+  return {
+    dateKey: selectedDateKey,
+    label: selectedDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    }),
+    tasks
+  };
+}
+
 async function renderHome(req, res) {
   try {
     const userId = req.session && req.session.user ? req.session.user.id : null;
@@ -246,14 +439,25 @@ async function renderHome(req, res) {
     const selectedEnergyFilter = normalizeEnergyFilter(req.query.energy);
     const selectedDueFilter = normalizeDueFilter(req.query.due);
     const selectedProgressFilter = normalizeProgressFilter(req.query.progress);
+    const selectedCalendarMonth = normalizeCalendarMonth(req.query.month);
+    const normalizedSelectedCalendarDate = normalizeCalendarDate(req.query.date);
+    const selectedCalendarDate = normalizedSelectedCalendarDate.startsWith(selectedCalendarMonth)
+      ? normalizedSelectedCalendarDate
+      : '';
 
     const allTodos = await getAllTodos(userId);
     const openTodos = allTodos.filter((todo) => !todo.completed);
     const completedTodos = allTodos.filter((todo) => todo.completed);
-    const sourceTodos = selectedView === 'completed' ? completedTodos : openTodos;
+    const sourceTodos = selectedView === 'completed'
+      ? completedTodos
+      : selectedView === 'calendar'
+        ? allTodos
+        : openTodos;
     const visibleTodos = filterTodosByEnergyAndDue(sourceTodos, selectedEnergyFilter, selectedDueFilter);
     const counts = buildCounts(allTodos);
     const progressSummary = getProgressSummary(allTodos, selectedProgressFilter);
+    const calendarView = buildCalendarView(visibleTodos, selectedCalendarMonth, selectedCalendarDate);
+    const calendarAgenda = buildCalendarAgenda(visibleTodos, selectedCalendarDate);
 
     const error = typeof req.query.error === 'string' ? req.query.error : '';
     const success = typeof req.query.success === 'string' ? req.query.success : '';
@@ -261,7 +465,9 @@ async function renderHome(req, res) {
       view: selectedView,
       energy: selectedEnergyFilter,
       due: selectedDueFilter,
-      progress: selectedProgressFilter
+      progress: selectedProgressFilter,
+      month: selectedCalendarMonth,
+      date: selectedCalendarDate
     });
 
     res.render('index', {
@@ -274,8 +480,12 @@ async function renderHome(req, res) {
       selectedEnergyFilter,
       selectedDueFilter,
       selectedProgressFilter,
+      selectedCalendarMonth,
+      selectedCalendarDate,
       counts,
       progressSummary,
+      calendarView,
+      calendarAgenda,
       error,
       success,
       returnTo
@@ -293,8 +503,12 @@ async function renderHome(req, res) {
       selectedEnergyFilter: 'all',
       selectedDueFilter: 'all',
       selectedProgressFilter: 'all',
+      selectedCalendarMonth: getMonthKey(new Date()),
+      selectedCalendarDate: '',
       counts: { total: 0, completed: 0, open: 0 },
       progressSummary: { total: 0, completed: 0, rate: 0 },
+      calendarView: buildCalendarView([], getMonthKey(new Date()), ''),
+      calendarAgenda: null,
       error: 'Unable to load todos right now. Please try again.',
       success: '',
       returnTo: '/'
