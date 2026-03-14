@@ -75,12 +75,20 @@ function configureGithubStrategy() {
             : [];
 
           const preferredEmail = verifiedEmails.find((entry) => entry.primary) || verifiedEmails[0];
-          const email = preferredEmail && preferredEmail.value
+          let email = preferredEmail && preferredEmail.value
             ? preferredEmail.value.toLowerCase()
             : null;
 
+          if (!email && profile && profile._json && typeof profile._json.email === 'string') {
+            email = profile._json.email.toLowerCase();
+          }
+
           if (!email) {
-            return done(new Error('GitHub account did not return an email address.'));
+            const normalizedUsername =
+              typeof profile.username === 'string' && profile.username.trim()
+                ? profile.username.trim().toLowerCase()
+                : 'github-user';
+            email = `${normalizedUsername}+${String(profile.id)}@users.noreply.github.com`;
           }
 
           const user = await findOrCreateSocialUser({

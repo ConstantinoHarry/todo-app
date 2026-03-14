@@ -103,7 +103,10 @@ function handleSocialAuthCallback(strategyName, providerLabel) {
     passport.authenticate(strategyName, async (error, user) => {
       if (error || !user) {
         console.error(`${providerLabel} login failed:`, error || 'No user returned');
-        return res.redirect('/login?error=' + encodeURIComponent(`Unable to login with ${providerLabel}.`));
+        const providerError = error && error.message ? ` ${error.message}` : '';
+        return res.redirect(
+          '/login?error=' + encodeURIComponent(`Unable to login with ${providerLabel}.${providerError}`)
+        );
       }
 
       try {
