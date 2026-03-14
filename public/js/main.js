@@ -11,6 +11,47 @@ document.addEventListener('DOMContentLoaded', () => {
   const taskDateInput = document.querySelector('[data-task-date]');
   const taskTimeInput = document.querySelector('[data-task-time]');
   const taskNameInput = document.getElementById('taskTextModal');
+  const focusModeButton = document.querySelector('[data-focus-mode-toggle]');
+  const focusModeLabel = document.querySelector('[data-focus-mode-label]');
+  const focusModeStorageKey = 'todo-focus-mode-enabled';
+
+  function applyFocusMode(enabled) {
+    document.body.classList.toggle('focus-mode', enabled);
+
+    if (!focusModeButton) {
+      return;
+    }
+
+    focusModeButton.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+    focusModeButton.classList.toggle('is-active', enabled);
+
+    if (focusModeLabel) {
+      focusModeLabel.textContent = enabled ? 'Focus Mode On' : 'Focus Mode';
+    }
+  }
+
+  if (focusModeButton) {
+    let initialFocusMode = false;
+
+    try {
+      initialFocusMode = window.localStorage.getItem(focusModeStorageKey) === 'true';
+    } catch (error) {
+      initialFocusMode = false;
+    }
+
+    applyFocusMode(initialFocusMode);
+
+    focusModeButton.addEventListener('click', () => {
+      const nextState = !document.body.classList.contains('focus-mode');
+      applyFocusMode(nextState);
+
+      try {
+        window.localStorage.setItem(focusModeStorageKey, String(nextState));
+      } catch (error) {
+        // Ignore storage errors in restricted environments
+      }
+    });
+  }
 
   if (clearCompletedForm) {
     clearCompletedForm.addEventListener('submit', (event) => {

@@ -49,6 +49,38 @@ body {
   padding: 20px;
 }
 
+/* Enhanced dark mode */
+body.focus-mode {
+  --surface: rgba(15, 23, 42, 0.82);
+  --surface-strong: rgba(15, 23, 42, 0.94);
+  --surface-soft: #162033;
+  --surface-muted: #0f172a;
+  --bg: #020617;
+  --bg-deep: #0b1120;
+  --border: rgba(71, 85, 105, 0.42);
+  --border-strong: #334155;
+  --text: #e5edf8;
+  --text-soft: #9fb0c7;
+  --text-faint: #6f86a3;
+  --primary: #60a5fa;
+  --primary-dark: #3b82f6;
+  --primary-soft: rgba(96, 165, 250, 0.16);
+  --danger: #f87171;
+  --danger-dark: #ef4444;
+  --success: #34d399;
+  --success-bg: rgba(16, 185, 129, 0.14);
+  --success-border: rgba(52, 211, 153, 0.28);
+  --shadow-sm: 0 12px 28px rgba(2, 6, 23, 0.42);
+  --shadow: 0 20px 48px rgba(2, 6, 23, 0.5);
+  --shadow-lg: 0 32px 72px rgba(2, 6, 23, 0.62);
+  color-scheme: dark;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(99, 102, 241, 0.14), transparent 26%),
+    radial-gradient(circle at bottom center, rgba(14, 165, 233, 0.08), transparent 30%),
+    linear-gradient(180deg, #020617 0%, #081121 48%, #0f172a 100%);
+}
+
 .app-shell {
   width: 100%;
 }
@@ -185,6 +217,42 @@ body {
   max-width: 700px;
 }
 
+.hero-metrics-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.focus-mode-btn {
+  min-height: 42px;
+  border-radius: 12px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.88rem;
+  font-weight: 800;
+  gap: 8px;
+}
+
+.focus-mode-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  line-height: 1;
+  font-size: 0.95rem;
+}
+
+.focus-mode-btn.is-active {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  border-color: #1e40af;
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.3);
+}
+
+.focus-mode-btn.is-active:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+}
+
 .alert {
   border-radius: 16px;
   padding: 14px 16px;
@@ -308,50 +376,167 @@ body {
   color: var(--text-soft);
 }
 
+.progress-card {
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+  border-color: #bfdbfe;
+  background:
+    radial-gradient(circle at 100% 0, rgba(59, 130, 246, 0.12), transparent 38%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.progress-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, #2563eb 0%, #38bdf8 48%, #60a5fa 100%);
+}
+
+.progress-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 14px;
+}
+
+.progress-card-copy {
+  flex: 1;
+  display: grid;
+  gap: 4px;
+}
+
+.progress-card-copy p {
+  max-width: 56ch;
+}
+
+.progress-card-score {
+  flex-shrink: 0;
+  min-width: 150px;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid #bfdbfe;
+  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.progress-score-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  font-weight: 800;
+  color: #1e40af;
+}
+
+.progress-score-value {
+  font-size: clamp(1.4rem, 2.2vw, 1.8rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #1e3a8a;
+}
+
 .progress-badge {
   display: inline-flex;
   align-items: center;
+  width: fit-content;
   white-space: nowrap;
   border-radius: 999px;
-  padding: 8px 12px;
-  background: #dbeafe;
-  color: #1e40af;
-  font-weight: 800;
-  font-size: 0.85rem;
-  border: 1px solid #bfdbfe;
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1e3a8a;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.01em;
+  border: 1px solid #93c5fd;
 }
 
 .progress-wrap {
-  padding: 8px 2px 2px;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%);
+  border: 1px solid #dbeafe;
+}
+
+.progress-card-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .progress-filter-form {
-  grid-template-columns: minmax(220px, 320px) auto;
+  grid-template-columns: minmax(190px, 260px) auto;
   justify-content: flex-start;
-  width: fit-content;
-  max-width: 100%;
-  margin-bottom: 2px;
+  align-items: center;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.progress-filter-form select {
+  min-height: 38px;
+  padding: 0.5rem 0.72rem;
+  border-radius: 10px;
+  border-color: #bfdbfe;
+  background: #ffffff;
+  color: #1e3a8a;
+  font-weight: 700;
 }
 
 .progress-filter-form .task-filter-btn {
-  min-width: 108px;
+  min-width: auto;
+}
+
+.progress-apply-btn {
+  min-height: 36px;
+  padding: 0.38rem 0.86rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  align-self: center;
+  line-height: 1;
+  border-color: #1d4ed8;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24);
+}
+
+.progress-apply-btn:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  border-color: #1e40af;
 }
 
 .progress-meta {
-  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin: 0;
   margin-bottom: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #475569;
 }
 
 .progress-native {
   width: 100%;
-  height: 14px;
+  height: 12px;
   border: none;
   border-radius: 999px;
   overflow: hidden;
 }
 
 .progress-native::-webkit-progress-bar {
-  background: #e5e7eb;
+  background: #dbeafe;
   border-radius: 999px;
 }
 
@@ -500,6 +685,380 @@ input[type='checkbox'] {
 .btn-ghost:hover {
   background: #f8fafc;
   border-color: #94a3b8;
+}
+
+body.focus-mode .app-container {
+  background: linear-gradient(180deg, rgba(2, 6, 23, 0.74) 0%, rgba(15, 23, 42, 0.7) 100%);
+  border: 1px solid rgba(51, 65, 85, 0.62);
+  box-shadow:
+    inset 0 1px 0 rgba(148, 163, 184, 0.05),
+    var(--shadow-lg);
+}
+
+body.focus-mode .page-header {
+  background:
+    radial-gradient(circle at 85% 20%, rgba(96, 165, 250, 0.24), transparent 20%),
+    radial-gradient(circle at 70% 100%, rgba(56, 189, 248, 0.16), transparent 24%),
+    linear-gradient(135deg, #020617 0%, #0f172a 38%, #1d4ed8 74%, #0ea5e9 100%);
+  box-shadow: 0 30px 64px rgba(2, 6, 23, 0.56);
+}
+
+body.focus-mode .header-user {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+}
+
+body.focus-mode .btn-logout {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(255, 255, 255, 0.88);
+  color: #0f172a;
+}
+
+body.focus-mode .section-card,
+body.focus-mode .stat-card,
+body.focus-mode .task-modal,
+body.focus-mode .auth-card {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.84) 100%);
+  border-color: rgba(71, 85, 105, 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(148, 163, 184, 0.04),
+    var(--shadow-sm);
+}
+
+body.focus-mode .stat-card::before,
+body.focus-mode .section-card::before,
+body.focus-mode .auth-card::before {
+  opacity: 0.7;
+}
+
+body.focus-mode .hero-metrics-copy p,
+body.focus-mode .section-heading p,
+body.focus-mode .todo-meta,
+body.focus-mode .empty-state,
+body.focus-mode .auth-subtitle,
+body.focus-mode .field-hint,
+body.focus-mode .app-footer,
+body.focus-mode .progress-meta {
+  color: var(--text-soft);
+}
+
+body.focus-mode .hero-metrics h2,
+body.focus-mode .section-heading h2,
+body.focus-mode .stat-value,
+body.focus-mode .task-modal-header h3,
+body.focus-mode .empty-state-title,
+body.focus-mode .auth-header h2,
+body.focus-mode .auth-brand-copy h1 {
+  color: var(--text);
+}
+
+body.focus-mode .section-kicker,
+body.focus-mode .auth-kicker,
+body.focus-mode .auth-inline-link,
+body.focus-mode .auth-back {
+  color: #7dd3fc;
+}
+
+body.focus-mode .alert-error {
+  background: rgba(127, 29, 29, 0.2);
+  border-color: rgba(248, 113, 113, 0.3);
+  color: #fecaca;
+}
+
+body.focus-mode .alert-success {
+  background: rgba(6, 95, 70, 0.18);
+  border-color: rgba(52, 211, 153, 0.26);
+  color: #a7f3d0;
+}
+
+body.focus-mode input[type='text'],
+body.focus-mode input[type='datetime-local'],
+body.focus-mode input[type='date'],
+body.focus-mode input[type='time'],
+body.focus-mode textarea,
+body.focus-mode select,
+body.focus-mode .floating-field input,
+body.focus-mode .subtask-input {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.96) 0%, rgba(17, 24, 39, 0.94) 100%);
+  border-color: rgba(71, 85, 105, 0.72);
+  color: var(--text);
+}
+
+body.focus-mode input[type='text']::placeholder,
+body.focus-mode textarea::placeholder,
+body.focus-mode .subtask-input::placeholder {
+  color: var(--text-faint);
+}
+
+body.focus-mode input[type='text']:focus,
+body.focus-mode input[type='datetime-local']:focus,
+body.focus-mode input[type='date']:focus,
+body.focus-mode input[type='time']:focus,
+body.focus-mode textarea:focus,
+body.focus-mode select:focus,
+body.focus-mode .floating-field input:focus,
+body.focus-mode .subtask-input:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.16);
+  background: rgba(15, 23, 42, 0.98);
+}
+
+body.focus-mode .floating-field label {
+  color: var(--text-faint);
+}
+
+body.focus-mode .floating-field input:focus + label,
+body.focus-mode .floating-field input:not(:placeholder-shown) + label {
+  color: #7dd3fc;
+}
+
+body.focus-mode .password-toggle,
+body.focus-mode .task-modal-close {
+  background: rgba(30, 41, 59, 0.96);
+  border-color: rgba(71, 85, 105, 0.72);
+  color: #cbd5e1;
+}
+
+body.focus-mode .password-toggle:hover,
+body.focus-mode .task-modal-close:hover {
+  background: rgba(51, 65, 85, 0.96);
+  border-color: #64748b;
+  color: #f8fafc;
+}
+
+body.focus-mode .btn-primary {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #f8fafc;
+  border-color: rgba(71, 85, 105, 0.68);
+}
+
+body.focus-mode .btn-primary:hover {
+  background: linear-gradient(135deg, #334155 0%, #111827 100%);
+}
+
+body.focus-mode .btn-secondary,
+body.focus-mode .progress-apply-btn,
+body.focus-mode .focus-mode-btn.is-active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-color: #1d4ed8;
+  color: #eff6ff;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.28);
+}
+
+body.focus-mode .btn-secondary:hover,
+body.focus-mode .progress-apply-btn:hover,
+body.focus-mode .focus-mode-btn.is-active:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+body.focus-mode .btn-danger {
+  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+  border-color: #7f1d1d;
+  color: #fff5f5;
+}
+
+body.focus-mode .btn-danger:hover {
+  background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
+}
+
+body.focus-mode .btn-ghost,
+body.focus-mode .auth-social-btn {
+  background: rgba(15, 23, 42, 0.86);
+  border-color: rgba(71, 85, 105, 0.68);
+  color: #dbeafe;
+}
+
+body.focus-mode .btn-ghost:hover,
+body.focus-mode .auth-social-btn:hover {
+  background: rgba(30, 41, 59, 0.96);
+  border-color: #64748b;
+  color: #eff6ff;
+}
+
+body.focus-mode .task-view-btn.is-active,
+body.focus-mode .auth-meta-chip,
+body.focus-mode .subtask-count,
+body.focus-mode .deadline-badge,
+body.focus-mode .progress-badge {
+  background: rgba(30, 64, 175, 0.18);
+  color: #bfdbfe;
+  border-color: rgba(96, 165, 250, 0.3);
+}
+
+body.focus-mode .subtask-count-empty {
+  background: rgba(51, 65, 85, 0.56);
+  color: #94a3b8;
+  border-color: rgba(100, 116, 139, 0.48);
+}
+
+body.focus-mode .deadline-badge.is-overdue {
+  background: rgba(127, 29, 29, 0.2);
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.32);
+}
+
+body.focus-mode .badge-high {
+  color: #fdba74;
+  background: rgba(154, 52, 18, 0.2);
+  border-color: rgba(251, 146, 60, 0.28);
+}
+
+body.focus-mode .badge-medium {
+  color: #93c5fd;
+  background: rgba(30, 64, 175, 0.18);
+  border-color: rgba(96, 165, 250, 0.28);
+}
+
+body.focus-mode .badge-low {
+  color: #c4b5fd;
+  background: rgba(91, 33, 182, 0.18);
+  border-color: rgba(167, 139, 250, 0.28);
+}
+
+body.focus-mode .progress-card {
+  border-color: rgba(71, 85, 105, 0.62);
+  background:
+    radial-gradient(circle at 100% 0, rgba(59, 130, 246, 0.18), transparent 38%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.96) 0%, rgba(17, 24, 39, 0.94) 100%);
+}
+
+body.focus-mode .progress-card::before {
+  background: linear-gradient(90deg, #60a5fa 0%, #38bdf8 48%, #22d3ee 100%);
+}
+
+body.focus-mode .progress-card-score {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.96) 0%, rgba(15, 23, 42, 0.92) 100%);
+  border-color: rgba(96, 165, 250, 0.26);
+}
+
+body.focus-mode .progress-score-label {
+  color: #93c5fd;
+}
+
+body.focus-mode .progress-score-value {
+  color: #e0f2fe;
+}
+
+body.focus-mode .progress-wrap,
+body.focus-mode .task-subtasks-field,
+body.focus-mode .auth-note,
+body.focus-mode .auth-note-soft,
+body.focus-mode .empty-state-card {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.84) 0%, rgba(17, 24, 39, 0.8) 100%);
+  border-color: rgba(71, 85, 105, 0.48);
+}
+
+body.focus-mode .progress-filter-form select {
+  background: rgba(17, 24, 39, 0.96);
+  color: var(--text);
+  border-color: rgba(71, 85, 105, 0.72);
+}
+
+body.focus-mode .progress-native::-webkit-progress-bar,
+body.focus-mode .subtask-progress-bar,
+body.focus-mode .subtask-progress-bar::-webkit-progress-bar,
+body.focus-mode .password-strength-bar {
+  background: rgba(51, 65, 85, 0.72);
+}
+
+body.focus-mode .todo-item {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.94) 0%, rgba(17, 24, 39, 0.9) 100%);
+  border-color: rgba(71, 85, 105, 0.6);
+  box-shadow:
+    inset 0 1px 0 rgba(148, 163, 184, 0.03),
+    0 12px 28px rgba(2, 6, 23, 0.42);
+}
+
+body.focus-mode .todo-item:hover {
+  border-color: rgba(96, 165, 250, 0.56);
+  box-shadow:
+    inset 0 1px 0 rgba(148, 163, 184, 0.04),
+    0 20px 36px rgba(2, 6, 23, 0.52);
+}
+
+body.focus-mode .todo-text,
+body.focus-mode .subtask-text,
+body.focus-mode .subtask-summary,
+body.focus-mode .subtask-summary-label,
+body.focus-mode label,
+body.focus-mode .field-label-static {
+  color: var(--text);
+}
+
+body.focus-mode .todo-description,
+body.focus-mode .subtask-progress-label,
+body.focus-mode .completed .todo-text,
+body.focus-mode .subtask-text.is-done,
+body.focus-mode .field-optional,
+body.focus-mode .password-strength-meta span {
+  color: var(--text-soft);
+}
+
+body.focus-mode .completed {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.72) 0%, rgba(17, 24, 39, 0.68) 100%);
+  opacity: 1;
+}
+
+body.focus-mode .edit-panel,
+body.focus-mode .subtask-section,
+body.focus-mode .auth-help {
+  border-top-color: rgba(71, 85, 105, 0.44);
+}
+
+body.focus-mode .edit-panel summary {
+  color: #7dd3fc;
+}
+
+body.focus-mode .subtask-row {
+  background: rgba(17, 24, 39, 0.88);
+  border-color: rgba(71, 85, 105, 0.52);
+}
+
+body.focus-mode .subtask-delete-btn {
+  background: rgba(15, 23, 42, 0.86);
+  border-color: rgba(71, 85, 105, 0.56);
+  color: #94a3b8;
+}
+
+body.focus-mode .subtask-delete-btn:hover {
+  background: rgba(127, 29, 29, 0.18);
+  border-color: rgba(248, 113, 113, 0.32);
+  color: #fca5a5;
+}
+
+body.focus-mode .task-modal-backdrop {
+  background: rgba(2, 6, 23, 0.72);
+}
+
+body.focus-mode .auth-panel-brand {
+  background:
+    radial-gradient(circle at 85% 14%, rgba(125, 211, 252, 0.16), transparent 20%),
+    linear-gradient(145deg, #020617 0%, #0f172a 42%, #1d4ed8 76%, #0ea5e9 100%);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 35px 70px rgba(2, 6, 23, 0.52);
+}
+
+body.focus-mode .auth-feature-card {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+body.focus-mode .auth-divider::before {
+  border-top-color: rgba(71, 85, 105, 0.44);
+}
+
+body.focus-mode .auth-divider span {
+  background: rgba(15, 23, 42, 0.9);
+  color: var(--text-faint);
+}
+
+body.focus-mode .validation-hint.is-success {
+  color: #6ee7b7;
+}
+
+body.focus-mode .validation-hint.is-error {
+  color: #fca5a5;
 }
 
 body.modal-open {
@@ -1674,6 +2233,16 @@ body.modal-open {
     align-items: flex-start;
   }
 
+  .hero-metrics-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .focus-mode-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
   .task-filter-form {
     grid-template-columns: 1fr;
     width: 100%;
@@ -1681,6 +2250,17 @@ body.modal-open {
 
   .progress-filter-form {
     grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
+  }
+
+  .progress-card-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .progress-card-score {
+    width: fit-content;
+    min-width: 0;
   }
 }
 
@@ -1769,8 +2349,19 @@ body.modal-open {
     grid-template-columns: 1fr;
   }
 
-  .progress-filter-form .task-filter-btn {
+  .progress-card-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .progress-filter-form .progress-apply-btn {
     width: 100%;
+    min-height: 40px;
+    font-size: 0.86rem;
+  }
+
+  .progress-meta {
+    font-size: 0.9rem;
   }
 }
 

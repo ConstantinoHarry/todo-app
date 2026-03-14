@@ -70,6 +70,19 @@
               Plan by energy, reduce overwhelm, and keep your daily work visually organized.
             </p>
           </div>
+
+          <div class="hero-metrics-actions">
+            <button
+              type="button"
+              class="btn btn-ghost focus-mode-btn"
+              data-focus-mode-toggle
+              aria-pressed="false"
+              aria-label="Toggle Focus Mode"
+            >
+              <span class="focus-mode-btn-icon" aria-hidden="true">🌙</span>
+              <span data-focus-mode-label>Focus Mode</span>
+            </button>
+          </div>
         </section>
 
         <section class="stats-grid" aria-label="Task overview">
@@ -94,32 +107,34 @@
         <section class="dashboard-grid">
           <div class="dashboard-main">
             <section class="progress-card section-card" aria-label="Progress tracker">
-              <div class="section-heading">
-                <div>
+              <div class="progress-card-top">
+                <div class="progress-card-copy">
                   <p class="section-kicker">Overview</p>
                   <h2>Today’s Progress</h2>
                   <p>Track how much of your current list is already done.</p>
                 </div>
-                <span class="progress-badge"><%= progressCompletionRate %>% complete</span>
+                <div class="progress-card-score" aria-label="Completion summary">
+                  <span class="progress-score-label">Completion</span>
+                  <strong class="progress-score-value"><%= progressCompletionRate %>%</strong>
+                  <span class="progress-badge"><%= progressFilterLabel %></span>
+                </div>
               </div>
 
-              <form action="/" method="GET" class="task-filter-form progress-filter-form">
-                <input type="hidden" name="view" value="<%= selectedView %>" />
-                <input type="hidden" name="energy" value="<%= selectedEnergyFilter %>" />
-                <input type="hidden" name="due" value="<%= selectedDueFilter %>" />
-                <label class="sr-only" for="progressFilter">Progress range</label>
-                <select id="progressFilter" name="progress">
-                  <option value="all" <%= selectedProgressFilter === 'all' ? 'selected' : '' %>>All tasks</option>
-                  <option value="today" <%= selectedProgressFilter === 'today' ? 'selected' : '' %>>Due today</option>
-                  <option value="week" <%= selectedProgressFilter === 'week' ? 'selected' : '' %>>Due this week</option>
-                </select>
-                <button type="submit" class="btn btn-ghost task-filter-btn">Apply</button>
-              </form>
+              <div class="progress-card-controls">
+                <form action="/" method="GET" class="task-filter-form progress-filter-form">
+                  <input type="hidden" name="view" value="<%= selectedView %>" />
+                  <input type="hidden" name="energy" value="<%= selectedEnergyFilter %>" />
+                  <input type="hidden" name="due" value="<%= selectedDueFilter %>" />
+                  <label class="sr-only" for="progressFilter">Progress range</label>
+                  <select id="progressFilter" name="progress">
+                    <option value="all" <%= selectedProgressFilter === 'all' ? 'selected' : '' %>>All tasks</option>
+                    <option value="today" <%= selectedProgressFilter === 'today' ? 'selected' : '' %>>Due today</option>
+                    <option value="week" <%= selectedProgressFilter === 'week' ? 'selected' : '' %>>Due this week</option>
+                  </select>
+                  <button type="submit" class="btn btn-ghost task-filter-btn progress-apply-btn">Apply</button>
+                </form>
 
-              <p class="todo-meta progress-meta">
-                <strong><%= progressSummary.completed %></strong> of
-                <strong><%= progressSummary.total %></strong> complete · <%= progressFilterLabel %>
-              </p>
+              </div>
 
               <div class="progress-wrap">
                 <progress
