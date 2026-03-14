@@ -4,6 +4,8 @@ const { requireAuth, requireGuest } = require('../middleware/auth');
 
 const router = express.Router();
 
+router.get('/register', requireGuest, authController.renderRegister);
+router.post('/register', requireGuest, authController.register);
 router.get('/login', requireGuest, authController.renderLogin);
 router.post('/login', requireGuest, authController.login);
 router.post('/logout', requireAuth, authController.logout);

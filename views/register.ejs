@@ -8,12 +8,12 @@
   </head>
   <body>
     <main class="auth-shell">
-      <section class="auth-card" aria-label="Login form">
+      <section class="auth-card" aria-label="Registration form">
         <div class="auth-header">
-          <p class="auth-kicker">Secure authentication</p>
-          <h1>Login to Todo App</h1>
+          <p class="auth-kicker">Create account</p>
+          <h1>Register for Todo App</h1>
           <p class="auth-subtitle">
-            Login with your registered account. Sessions are stored in MySQL for production-safe persistence.
+            Create your account to manage your personal task list securely.
           </p>
         </div>
 
@@ -29,7 +29,7 @@
           </section>
         <% } %>
 
-        <form class="auth-form" action="/login" method="POST">
+        <form class="auth-form" action="/register" method="POST">
           <div class="form-field">
             <label for="email">Email</label>
             <input
@@ -48,18 +48,32 @@
               id="password"
               name="password"
               type="password"
-              placeholder="Enter your password"
+              placeholder="At least 8 characters"
               required
-              autocomplete="current-password"
+              minlength="8"
+              autocomplete="new-password"
             />
           </div>
 
-          <button type="submit" class="btn btn-primary auth-submit">Login</button>
+          <div class="form-field">
+            <label for="confirmPassword">Confirm Password</label>
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              placeholder="Re-enter your password"
+              required
+              minlength="8"
+              autocomplete="new-password"
+            />
+          </div>
+
+          <button type="submit" class="btn btn-primary auth-submit">Create Account</button>
         </form>
 
         <div class="auth-help">
-          <p>New here?</p>
-          <a class="auth-back" href="/register">Create an account</a>
+          <p>Already have an account?</p>
+          <a class="auth-back" href="/login">Back to login</a>
         </div>
       </section>
     </main>

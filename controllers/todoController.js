@@ -87,6 +87,11 @@ function applyFocusMode(openTodos, focusMode, selectedEnergy) {
 
 async function renderHome(req, res) {
   try {
+    const userId = req.session && req.session.user ? req.session.user.id : null;
+    if (!userId) {
+      return res.redirect('/login?error=' + encodeURIComponent('Please login to continue.'));
+    }
+
     const focusMode = req.query.focus === 'true';
     const selectedEnergy = ALLOWED_ENERGY_LEVELS.includes(req.query.energy)
       ? req.query.energy
@@ -94,7 +99,7 @@ async function renderHome(req, res) {
     const search = normalizeSearch(req.query.search);
 
     const dbFilter = selectedEnergy === 'all' ? {} : { energyLevel: selectedEnergy };
-    const allTodosFromDb = await getAllTodos(dbFilter);
+    const allTodosFromDb = await getAllTodos(userId, dbFilter);
     const searchedTodos = filterTodosBySearch(allTodosFromDb, search);
 
     const openTodos = searchedTodos.filter((todo) => !todo.completed);
@@ -149,6 +154,11 @@ async function createTodo(req, res) {
   const returnTo = getSafeReturnTo(req.body.returnTo || '/');
 
   try {
+    const userId = req.session && req.session.user ? req.session.user.id : null;
+    if (!userId) {
+      return res.redirect('/login?error=' + encodeURIComponent('Please login to continue.'));
+    }
+
     const text = typeof req.body.text === 'string' ? req.body.text.trim() : '';
     const energyLevel = typeof req.body.energyLevel === 'string' ? req.body.energyLevel : '';
 
@@ -164,7 +174,7 @@ async function createTodo(req, res) {
       return res.redirect(addMessageToPath(returnTo, 'error', 'Please choose a valid energy level.'));
     }
 
-    await createTodoModel(text, energyLevel);
+    await createTodoModel(userId, text, energyLevel);
     return res.redirect(addMessageToPath(returnTo, 'success', 'Task added successfully.'));
   } catch (error) {
     console.error('Failed to create todo:', error);
@@ -176,13 +186,18 @@ async function toggleTodo(req, res) {
   const returnTo = getSafeReturnTo(req.body.returnTo || '/');
 
   try {
+    const userId = req.session && req.session.user ? req.session.user.id : null;
+    if (!userId) {
+      return res.redirect('/login?error=' + encodeURIComponent('Please login to continue.'));
+    }
+
     const id = Number.parseInt(req.params.id, 10);
 
     if (Number.isNaN(id)) {
       return res.redirect(addMessageToPath(returnTo, 'error', 'Invalid task ID.'));
     }
 
-    await toggleTodoModel(id);
+    await toggleTodoModel(userId, id);
     return res.redirect(returnTo);
   } catch (error) {
     console.error('Failed to toggle todo:', error);
@@ -194,6 +209,11 @@ async function updateTodo(req, res) {
   const returnTo = getSafeReturnTo(req.body.returnTo || '/');
 
   try {
+    const userId = req.session && req.session.user ? req.session.user.id : null;
+    if (!userId) {
+      return res.redirect('/login?error=' + encodeURIComponent('Please login to continue.'));
+    }
+
     const id = Number.parseInt(req.params.id, 10);
     const text = typeof req.body.text === 'string' ? req.body.text.trim() : '';
     const energyLevel = typeof req.body.energyLevel === 'string' ? req.body.energyLevel : '';
@@ -214,7 +234,7 @@ async function updateTodo(req, res) {
       return res.redirect(addMessageToPath(returnTo, 'error', 'Please choose a valid energy level.'));
     }
 
-    await updateTodoModel(id, text, energyLevel);
+    await updateTodoModel(userId, id, text, energyLevel);
     return res.redirect(addMessageToPath(returnTo, 'success', 'Task updated successfully.'));
   } catch (error) {
     console.error('Failed to update todo:', error);
@@ -226,13 +246,18 @@ async function deleteTodo(req, res) {
   const returnTo = getSafeReturnTo(req.body.returnTo || '/');
 
   try {
+    const userId = req.session && req.session.user ? req.session.user.id : null;
+    if (!userId) {
+      return res.redirect('/login?error=' + encodeURIComponent('Please login to continue.'));
+    }
+
     const id = Number.parseInt(req.params.id, 10);
 
     if (Number.isNaN(id)) {
       return res.redirect(addMessageToPath(returnTo, 'error', 'Invalid task ID.'));
     }
 
-    await deleteTodoModel(id);
+    await deleteTodoModel(userId, id);
     return res.redirect(addMessageToPath(returnTo, 'success', 'Task deleted.'));
   } catch (error) {
     console.error('Failed to delete todo:', error);
@@ -244,7 +269,12 @@ async function clearCompletedTodos(req, res) {
   const returnTo = getSafeReturnTo(req.body.returnTo || '/');
 
   try {
-    await clearCompletedTodosModel();
+    const userId = req.session && req.session.user ? req.session.user.id : null;
+    if (!userId) {
+      return res.redirect('/login?error=' + encodeURIComponent('Please login to continue.'));
+    }
+
+    await clearCompletedTodosModel(userId);
     return res.redirect(addMessageToPath(returnTo, 'success', 'Completed tasks cleared for today.'));
   } catch (error) {
     console.error('Failed to clear completed todos:', error);
