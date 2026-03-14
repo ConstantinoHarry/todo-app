@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <main class="auth-shell">
+      <section class="auth-card" aria-label="Login form">
+        <div class="auth-header">
+          <p class="auth-kicker">Starter authentication</p>
+          <h1>Login to Todo App</h1>
+          <p class="auth-subtitle">
+            This is a starter login flow without database/session yet. It is ready for your next auth step.
+          </p>
+        </div>
+
+        <% if (error) { %>
+          <section class="alert alert-error" aria-live="polite">
+            <p><%= error %></p>
+          </section>
+        <% } %>
+
+        <% if (success) { %>
+          <section class="alert alert-success" aria-live="polite">
+            <p><%= success %></p>
+          </section>
+        <% } %>
+
+        <form class="auth-form" action="/login" method="POST">
+          <div class="form-field">
+            <label for="email">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              required
+              autocomplete="email"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="password">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="Enter your password"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+
+          <button type="submit" class="btn btn-primary auth-submit">Login</button>
+        </form>
+
+        <div class="auth-help">
+          <p><strong>Demo credentials</strong> come from environment variables:</p>
+          <ul>
+            <li><code>AUTH_EMAIL</code></li>
+            <li><code>AUTH_PASSWORD</code></li>
+          </ul>
+          <a class="auth-back" href="/">Continue to app</a>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

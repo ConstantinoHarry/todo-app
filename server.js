@@ -3,6 +3,7 @@ const express = require('express');
 const methodOverride = require('method-override');
 require('dotenv').config();
 
+const authRoutes = require('./routes/auth');
 const todoRoutes = require('./routes/todos');
 
 const app = express();
@@ -16,6 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(methodOverride('_method'));
 
+app.use('/', authRoutes);
 app.use('/', todoRoutes);
 
 app.use((req, res) => {
