@@ -5,36 +5,62 @@ const MySQLStore = require('express-mysql-session')(session);
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const csrf = require('csurf');
+const passport = require('passport');
 const methodOverride = require('method-override');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const todoRoutes = require('./routes/todos');
 const { requireAuth } = require('./middleware/auth');
+const configurePassport = require('./config/passport');
+const pool = require('./config/db');
+const {
+  getAppConfig,
+  getDbConfig,
+  getSecurityConfig,
+  validateProductionEnv
+} = require('./config/env');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const isProduction = process.env.NODE_ENV === 'production';
+const appConfig = getAppConfig();
+const securityConfig = getSecurityConfig();
+const dbConfig = getDbConfig();
+const PORT = appConfig.port;
+const isProduction = appConfig.isProduction;
+
+validateProductionEnv();
+
+configurePassport();
 const csrfProtection = csrf();
+const globalLimiter = rateLimit({
+  windowMs: securityConfig.globalRateLimitWindowMs,
+  max: securityConfig.globalRateLimitMax,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many requests. Please try again later.'
+});
 const authLimiter = rateLimit({
-  windowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max: Number(process.env.AUTH_RATE_LIMIT_MAX) || 10,
+  windowMs: securityConfig.authRateLimitWindowMs,
+  max: securityConfig.authRateLimitMax,
   standardHeaders: true,
   legacyHeaders: false,
   message: 'Too many auth attempts. Please try again shortly.'
 });
 
 const sessionStore = new MySQLStore({
-  host: process.env.DB_HOST || process.env.MYSQLHOST || 'localhost',
-  port: Number(process.env.DB_PORT || process.env.MYSQLPORT) || 3306,
-  user: process.env.DB_USER || process.env.MYSQLUSER || 'root',
-  password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || '',
-  database: process.env.DB_NAME || process.env.MYSQLDATABASE || 'todo_app',
-  createDatabaseTable: true
+  host: dbConfig.host,
+  port: dbConfig.port,
+  user: dbConfig.user,
+  password: dbConfig.password,
+  database: dbConfig.database,
+  createDatabaseTable: true,
+  clearExpired: true,
+  checkExpirationInterval: 15 * 60 * 1000,
+  expiration: securityConfig.sessionMaxAgeMs
 });
 
 if (isProduction) {
-  app.set('trust proxy', 1);
+  app.set('trust proxy', appConfig.trustProxy);
 }
 
 app.set('view engine', 'ejs');
@@ -45,26 +71,47 @@ app.use(
     contentSecurityPolicy: false
   })
 );
+app.use(globalLimiter);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(methodOverride('_method'));
 app.use(
   session({
-    name: 'todo.sid',
-    secret: process.env.SESSION_SECRET || 'change-me-in-production',
+    name: securityConfig.sessionName,
+    secret: securityConfig.sessionSecret,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
+    rolling: true,
     cookie: {
       httpOnly: true,
-      sameSite: 'lax',
-      secure: isProduction,
-      maxAge: 1000 * 60 * 60 * 8
+      sameSite: securityConfig.sessionSameSite,
+      secure: securityConfig.sessionSecureCookie,
+      domain: securityConfig.sessionDomain,
+      maxAge: securityConfig.sessionMaxAgeMs
     }
   })
 );
+app.use(passport.initialize());
 app.use(csrfProtection);
+
+app.get('/healthz', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    uptime: process.uptime(),
+    env: appConfig.nodeEnv
+  });
+});
+
+app.get('/readyz', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    return res.status(200).json({ status: 'ready' });
+  } catch (error) {
+    return res.status(503).json({ status: 'not-ready' });
+  }
+});
 
 app.use('/login', authLimiter);
 app.use('/register', authLimiter);
@@ -112,5 +159,5 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on ${appConfig.appBaseUrl}`);
 });

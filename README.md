@@ -36,6 +36,7 @@ Not every task requires the same mental effort. On busy or low-energy days, this
 - Rate limiting on authentication routes
 - Secure headers via Helmet
 - Password reset flow with expiring token support
+- Google and GitHub OAuth login buttons (Passport-based)
 
 ## Tech stack
 
@@ -110,17 +111,36 @@ Primary local variables:
 ```env
 PORT=3000
 NODE_ENV=development
+APP_BASE_URL=http://localhost:3000
+TRUST_PROXY=0
 DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=your_mysql_password
 DB_NAME=todo_app
+DB_CONNECTION_LIMIT=10
+DB_SSL=false
+DB_SSL_REJECT_UNAUTHORIZED=true
 SESSION_SECRET=replace_with_a_long_random_secret
-APP_BASE_URL=http://localhost:3000
+SESSION_NAME=todo.sid
+SESSION_MAX_AGE_MS=28800000
+SESSION_SAME_SITE=lax
+SESSION_SECURE_COOKIE=false
+SESSION_COOKIE_DOMAIN=
 RESET_PASSWORD_URL_BASE=http://localhost:3000
 RESET_TOKEN_TTL_MINUTES=60
 AUTH_RATE_LIMIT_WINDOW_MS=900000
 AUTH_RATE_LIMIT_MAX=10
+GLOBAL_RATE_LIMIT_WINDOW_MS=900000
+GLOBAL_RATE_LIMIT_MAX=200
+
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback
+
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+GITHUB_CALLBACK_URL=http://localhost:3000/auth/github/callback
 ```
 
 Also supported for Railway-style MySQL environments:
@@ -143,6 +163,8 @@ CREATE TABLE IF NOT EXISTS users (
    id INT PRIMARY KEY AUTO_INCREMENT,
    email VARCHAR(255) NOT NULL UNIQUE,
    password_hash VARCHAR(255) NOT NULL,
+   google_id VARCHAR(191) DEFAULT NULL,
+   github_id VARCHAR(191) DEFAULT NULL,
    reset_password_token_hash VARCHAR(64) DEFAULT NULL,
    reset_password_expires_at DATETIME DEFAULT NULL,
    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -173,7 +195,23 @@ CREATE TABLE IF NOT EXISTS completed_tasks (
 CREATE INDEX idx_todos_user_id ON todos(user_id);
 CREATE INDEX idx_completed_tasks_user_id ON completed_tasks(user_id);
 CREATE INDEX idx_users_reset_token_hash ON users(reset_password_token_hash);
+CREATE UNIQUE INDEX idx_users_google_id_unique ON users(google_id);
+CREATE UNIQUE INDEX idx_users_github_id_unique ON users(github_id);
 ```
+
+## OAuth provider setup
+
+For Google OAuth:
+
+- Create OAuth credentials in Google Cloud Console
+- Authorized redirect URI: `http://localhost:3000/auth/google/callback`
+- Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
+
+For GitHub OAuth:
+
+- Create an OAuth app in GitHub Developer Settings
+- Authorization callback URL: `http://localhost:3000/auth/github/callback`
+- Set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`
 
 ## Railway deployment notes
 
@@ -184,6 +222,18 @@ CREATE INDEX idx_users_reset_token_hash ON users(reset_password_token_hash);
 5. Railway runs `npm install` and starts the app with:
    - `npm start`
 6. Confirm app is healthy and DB connection works.
+
+## Production readiness checklist
+
+- Set `NODE_ENV=production`
+- Set a strong `SESSION_SECRET` (minimum 32 random characters)
+- Set `APP_BASE_URL` to your public HTTPS URL
+- Set `TRUST_PROXY=1` when deploying behind reverse proxy/load balancer
+- Set `SESSION_SECURE_COOKIE=true` in production
+- If DB requires TLS, set `DB_SSL=true`
+- Run health checks:
+   - `/healthz` for liveness
+   - `/readyz` for DB readiness
 
 ## Security and production notes
 

@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const passport = require('passport');
 const {
   findUserByEmail,
   createUser,
@@ -54,7 +55,9 @@ function renderLogin(req, res) {
   res.render('login', {
     title: 'Login | Todo App',
     error,
-    success
+    success,
+    googleEnabled: isGoogleConfigured(),
+    githubEnabled: isGithubConfigured()
   });
 }
 
@@ -69,23 +72,80 @@ function renderRegister(req, res) {
   res.render('register', {
     title: 'Create Account | Todo App',
     error,
-    success
+    success,
+    googleEnabled: isGoogleConfigured(),
+    githubEnabled: isGithubConfigured()
   });
 }
 
-function loginWithGoogle(req, res) {
-  return res.redirect(
-    '/login?error=' +
-      encodeURIComponent('Google login is not configured yet. Add OAuth credentials to enable it.')
-  );
+function getProviderStatus(req, res) {
+  return res.json({
+    google: isGoogleConfigured(),
+    github: isGithubConfigured()
+  });
 }
 
-function loginWithGithub(req, res) {
-  return res.redirect(
-    '/login?error=' +
-      encodeURIComponent('GitHub login is not configured yet. Add OAuth credentials to enable it.')
-  );
+function isGoogleConfigured() {
+  return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 }
+
+function isGithubConfigured() {
+  return Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
+}
+
+function startGoogleAuth(req, res, next) {
+  if (!isGoogleConfigured()) {
+    return res.redirect(
+      '/login?error=' +
+        encodeURIComponent('Google login is not configured yet. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.')
+    );
+  }
+
+  return passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    prompt: 'select_account'
+  })(req, res, next);
+}
+
+function startGithubAuth(req, res, next) {
+  if (!isGithubConfigured()) {
+    return res.redirect(
+      '/login?error=' +
+        encodeURIComponent('GitHub login is not configured yet. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET.')
+    );
+  }
+
+  return passport.authenticate('github', {
+    scope: ['user:email']
+  })(req, res, next);
+}
+
+function handleSocialAuthCallback(strategyName, providerLabel) {
+  return (req, res, next) => {
+    passport.authenticate(strategyName, async (error, user) => {
+      if (error || !user) {
+        console.error(`${providerLabel} login failed:`, error || 'No user returned');
+        return res.redirect('/login?error=' + encodeURIComponent(`Unable to login with ${providerLabel}.`));
+      }
+
+      try {
+        await regenerateSession(req);
+        req.session.user = {
+          id: user.id,
+          email: user.email,
+          loginAt: new Date().toISOString()
+        };
+        return res.redirect('/?success=' + encodeURIComponent(`Logged in with ${providerLabel}.`));
+      } catch (sessionError) {
+        console.error(`${providerLabel} session setup failed:`, sessionError);
+        return res.redirect('/login?error=' + encodeURIComponent('Unable to complete login right now.'));
+      }
+    })(req, res, next);
+  };
+}
+
+const googleAuthCallback = handleSocialAuthCallback('google', 'Google');
+const githubAuthCallback = handleSocialAuthCallback('github', 'GitHub');
 
 function renderForgotPassword(req, res) {
   if (req.session && req.session.user) {
@@ -305,8 +365,11 @@ module.exports = {
   renderLogin,
   login,
   logout,
-  loginWithGoogle,
-  loginWithGithub,
+  getProviderStatus,
+  startGoogleAuth,
+  googleAuthCallback,
+  startGithubAuth,
+  githubAuthCallback,
   renderForgotPassword,
   requestPasswordReset,
   renderResetPassword,

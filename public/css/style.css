@@ -791,7 +791,7 @@ input[type='checkbox'] {
   padding: 38px;
   min-height: 720px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   background:
     linear-gradient(145deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 64, 175, 0.94) 52%, rgba(56, 189, 248, 0.82) 100%);
   color: #ffffff;
@@ -1208,6 +1208,10 @@ input[type='checkbox'] {
   border-color: #bfdbfe;
   box-shadow: 0 10px 25px rgba(59, 130, 246, 0.08);
   background: #ffffff;
+}
+
+.auth-social-btn.is-disabled {
+  opacity: 0.66;
 }
 
 .auth-divider {

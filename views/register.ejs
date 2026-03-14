@@ -62,11 +62,21 @@
           <% } %>
 
           <div class="auth-socials">
-            <a href="/auth/google" class="auth-social-btn" aria-label="Continue with Google">
+            <a
+              href="<%= googleEnabled ? '/auth/google' : '/register?error=' + encodeURIComponent('Google login is not configured yet.') %>"
+              class="auth-social-btn <%= !googleEnabled ? 'is-disabled' : '' %>"
+              aria-label="Continue with Google"
+              aria-disabled="<%= googleEnabled ? 'false' : 'true' %>"
+            >
               <span>G</span>
               <span>Continue with Google</span>
             </a>
-            <a href="/auth/github" class="auth-social-btn" aria-label="Continue with GitHub">
+            <a
+              href="<%= githubEnabled ? '/auth/github' : '/register?error=' + encodeURIComponent('GitHub login is not configured yet.') %>"
+              class="auth-social-btn <%= !githubEnabled ? 'is-disabled' : '' %>"
+              aria-label="Continue with GitHub"
+              aria-disabled="<%= githubEnabled ? 'false' : 'true' %>"
+            >
               <span>◐</span>
               <span>Continue with GitHub</span>
             </a>

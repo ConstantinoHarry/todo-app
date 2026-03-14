@@ -5,15 +5,65 @@ CREATE TABLE IF NOT EXISTS users (
   id INT PRIMARY KEY AUTO_INCREMENT,
   email VARCHAR(255) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
+  google_id VARCHAR(191) DEFAULT NULL,
+  github_id VARCHAR(191) DEFAULT NULL,
   reset_password_token_hash VARCHAR(64) DEFAULT NULL,
   reset_password_expires_at DATETIME DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-ALTER TABLE users
-  ADD COLUMN IF NOT EXISTS reset_password_token_hash VARCHAR(64) DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS reset_password_expires_at DATETIME DEFAULT NULL;
+SET @stmt = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE users ADD COLUMN google_id VARCHAR(191) DEFAULT NULL',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'google_id'
+);
+PREPARE s FROM @stmt;
+EXECUTE s;
+DEALLOCATE PREPARE s;
+
+SET @stmt = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE users ADD COLUMN github_id VARCHAR(191) DEFAULT NULL',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'github_id'
+);
+PREPARE s FROM @stmt;
+EXECUTE s;
+DEALLOCATE PREPARE s;
+
+SET @stmt = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE users ADD COLUMN reset_password_token_hash VARCHAR(64) DEFAULT NULL',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'reset_password_token_hash'
+);
+PREPARE s FROM @stmt;
+EXECUTE s;
+DEALLOCATE PREPARE s;
+
+SET @stmt = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE users ADD COLUMN reset_password_expires_at DATETIME DEFAULT NULL',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'reset_password_expires_at'
+);
+PREPARE s FROM @stmt;
+EXECUTE s;
+DEALLOCATE PREPARE s;
 
 CREATE TABLE IF NOT EXISTS todos (
   id INT PRIMARY KEY AUTO_INCREMENT,
@@ -36,6 +86,67 @@ CREATE TABLE IF NOT EXISTS completed_tasks (
   CONSTRAINT fk_completed_tasks_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_todos_user_id ON todos(user_id);
-CREATE INDEX IF NOT EXISTS idx_completed_tasks_user_id ON completed_tasks(user_id);
-CREATE INDEX IF NOT EXISTS idx_users_reset_token_hash ON users(reset_password_token_hash);
+SET @stmt = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'CREATE INDEX idx_todos_user_id ON todos(user_id)',
+    'SELECT 1'
+  )
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'todos' AND INDEX_NAME = 'idx_todos_user_id'
+);
+PREPARE s FROM @stmt;
+EXECUTE s;
+DEALLOCATE PREPARE s;
+
+SET @stmt = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'CREATE INDEX idx_completed_tasks_user_id ON completed_tasks(user_id)',
+    'SELECT 1'
+  )
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'completed_tasks' AND INDEX_NAME = 'idx_completed_tasks_user_id'
+);
+PREPARE s FROM @stmt;
+EXECUTE s;
+DEALLOCATE PREPARE s;
+
+SET @stmt = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'CREATE INDEX idx_users_reset_token_hash ON users(reset_password_token_hash)',
+    'SELECT 1'
+  )
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND INDEX_NAME = 'idx_users_reset_token_hash'
+);
+PREPARE s FROM @stmt;
+EXECUTE s;
+DEALLOCATE PREPARE s;
+
+SET @stmt = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'CREATE UNIQUE INDEX idx_users_google_id_unique ON users(google_id)',
+    'SELECT 1'
+  )
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND INDEX_NAME = 'idx_users_google_id_unique'
+);
+PREPARE s FROM @stmt;
+EXECUTE s;
+DEALLOCATE PREPARE s;
+
+SET @stmt = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'CREATE UNIQUE INDEX idx_users_github_id_unique ON users(github_id)',
+    'SELECT 1'
+  )
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND INDEX_NAME = 'idx_users_github_id_unique'
+);
+PREPARE s FROM @stmt;
+EXECUTE s;
+DEALLOCATE PREPARE s;
