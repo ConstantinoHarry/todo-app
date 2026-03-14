@@ -1,4 +1,8 @@
 function renderLogin(req, res) {
+  if (req.session && req.session.user) {
+    return res.redirect('/');
+  }
+
   const error = typeof req.query.error === 'string' ? req.query.error : '';
   const success = typeof req.query.success === 'string' ? req.query.success : '';
 
@@ -24,10 +28,27 @@ function login(req, res) {
     return res.redirect('/login?error=' + encodeURIComponent('Invalid credentials. Try the demo credentials from README/.env.example.'));
   }
 
-  return res.redirect('/login?success=' + encodeURIComponent('Login successful (starter mode, no session yet).'));
+  req.session.user = {
+    email,
+    loginAt: new Date().toISOString()
+  };
+
+  return res.redirect('/?success=' + encodeURIComponent('Login successful. Welcome back.'));
+}
+
+function logout(req, res) {
+  if (!req.session) {
+    return res.redirect('/login?success=' + encodeURIComponent('You are logged out.'));
+  }
+
+  return req.session.destroy(() => {
+    res.clearCookie('todo.sid');
+    res.redirect('/login?success=' + encodeURIComponent('You have been logged out.'));
+  });
 }
 
 module.exports = {
   renderLogin,
-  login
+  login,
+  logout
 };

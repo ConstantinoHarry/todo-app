@@ -7,6 +7,17 @@
     </p>
   </div>
 
+  <div class="header-actions">
+    <% if (isAuthenticated) { %>
+      <span class="header-user"><%= currentUser && currentUser.email ? currentUser.email : 'Logged in' %></span>
+      <form action="/logout" method="POST" class="inline-form">
+        <button type="submit" class="btn btn-ghost btn-logout">Logout</button>
+      </form>
+    <% } else { %>
+      <a href="/login" class="btn btn-ghost btn-logout">Login</a>
+    <% } %>
+  </div>
+
   <div class="header-orb header-orb-one"></div>
   <div class="header-orb header-orb-two"></div>
 </header>

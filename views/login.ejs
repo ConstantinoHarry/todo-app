@@ -13,7 +13,7 @@
           <p class="auth-kicker">Starter authentication</p>
           <h1>Login to Todo App</h1>
           <p class="auth-subtitle">
-            This is a starter login flow without database/session yet. It is ready for your next auth step.
+            This uses session-based starter auth (no user database yet), so you can proceed now and wire full auth later.
           </p>
         </div>
 
@@ -62,8 +62,9 @@
           <ul>
             <li><code>AUTH_EMAIL</code></li>
             <li><code>AUTH_PASSWORD</code></li>
+            <li><code>SESSION_SECRET</code> (for signed session cookies)</li>
           </ul>
-          <a class="auth-back" href="/">Continue to app</a>
+          <a class="auth-back" href="/">Go to app after login</a>
         </div>
       </section>
     </main>
