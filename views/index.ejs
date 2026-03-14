@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <main class="app-container">
+      <%- include('partials/header') %>
+
+      <% if (error) { %>
+        <section class="alert alert-error" aria-live="polite">
+          <p><%= error %></p>
+        </section>
+      <% } %>
+
+      <section class="controls" aria-label="Todo controls">
+        <form class="todo-form" action="/todos" method="POST">
+          <input type="hidden" name="returnTo" value="<%= returnTo %>" />
+
+          <label for="taskText">Task</label>
+          <input
+            id="taskText"
+            name="text"
+            type="text"
+            placeholder="What do you need to do?"
+            required
+            maxlength="255"
+          />
+
+          <label for="energyLevel">Energy level</label>
+          <select id="energyLevel" name="energyLevel">
+            <option value="high">⚡ High Energy</option>
+            <option value="medium" selected>😊 Medium Energy</option>
+            <option value="low">😴 Low Energy</option>
+          </select>
+
+          <button type="submit" class="btn btn-primary">Add Todo</button>
+        </form>
+      </section>
+
+      <section class="focus-panel" aria-label="Focus mode controls">
+        <h2>Daily Focus Mode</h2>
+        <p class="panel-copy">
+          Match tasks to your current energy and limit visible work to avoid overload.
+        </p>
+
+        <form class="focus-form" action="/" method="GET">
+          <label class="checkbox-row" for="focusModeToggle">
+            <input
+              id="focusModeToggle"
+              type="checkbox"
+              name="focus"
+              value="true"
+              <%= focusMode ? 'checked' : '' %>
+            />
+            Enable Focus Mode
+          </label>
+
+          <label for="energyFilter">Energy filter</label>
+          <select id="energyFilter" name="energy">
+            <option value="all" <%= selectedEnergy === 'all' ? 'selected' : '' %>>All energy levels</option>
+            <option value="high" <%= selectedEnergy === 'high' ? 'selected' : '' %>>⚡ High Energy</option>
+            <option value="medium" <%= selectedEnergy === 'medium' ? 'selected' : '' %>>😊 Medium Energy</option>
+            <option value="low" <%= selectedEnergy === 'low' ? 'selected' : '' %>>😴 Low Energy</option>
+          </select>
+
+          <button id="focusModeButton" type="submit" class="btn btn-secondary">
+            Apply Focus Settings
+          </button>
+        </form>
+
+        <% if (focusMessage) { %>
+          <p class="focus-message"><%= focusMessage %></p>
+        <% } %>
+
+        <div class="action-row">
+          <form action="/todos/clear-completed" method="POST" data-clear-completed-form>
+            <input type="hidden" name="returnTo" value="<%= returnTo %>" />
+            <button type="submit" class="btn btn-danger">Clear for Today</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="budget" aria-label="Energy budget">
+        <h2>Energy Budget</h2>
+        <ul class="budget-list">
+          <li><span>⚡ High Energy</span><strong><%= energyBudget.high %> task(s)</strong></li>
+          <li><span>😊 Medium Energy</span><strong><%= energyBudget.medium %> task(s)</strong></li>
+          <li><span>😴 Low Energy</span><strong><%= energyBudget.low %> task(s)</strong></li>
+        </ul>
+      </section>
+
+      <section class="todo-list-section" aria-label="Todo list">
+        <h2>Todos</h2>
+
+        <p class="todo-meta">
+          Total: <strong><%= counts.total %></strong>
+          · Open: <strong><%= counts.open %></strong>
+          · Completed: <strong><%= counts.completed %></strong>
+        </p>
+
+        <% if (!todos.length) { %>
+          <p class="empty-state">No tasks yet. Add your first todo.</p>
+        <% } else { %>
+          <ul class="todo-list">
+            <% todos.forEach((todo) => { %>
+              <li class="todo-item <%= todo.completed ? 'completed' : '' %>">
+                <div class="todo-main">
+                  <form action="/todos/<%= todo.id %>?_method=PATCH" method="POST" class="inline-form">
+                    <input type="hidden" name="returnTo" value="<%= returnTo %>" />
+                    <label class="checkbox-row todo-checkbox-label" for="todo-<%= todo.id %>">
+                      <input
+                        id="todo-<%= todo.id %>"
+                        type="checkbox"
+                        name="completed"
+                        onchange="this.form.submit()"
+                        <%= todo.completed ? 'checked' : '' %>
+                      />
+                      <span class="todo-text"><%= todo.text %></span>
+                    </label>
+                  </form>
+                </div>
+
+                <div class="todo-actions">
+                  <span class="badge badge-<%= todo.energy_level %>">
+                    <%= todo.energy_level === 'high' ? '⚡ High Energy' : todo.energy_level === 'medium' ? '😊 Medium Energy' : '😴 Low Energy' %>
+                  </span>
+
+                  <form action="/todos/<%= todo.id %>?_method=DELETE" method="POST" class="inline-form">
+                    <input type="hidden" name="returnTo" value="<%= returnTo %>" />
+                    <button type="submit" class="btn btn-ghost">Delete</button>
+                  </form>
+                </div>
+              </li>
+            <% }); %>
+          </ul>
+        <% } %>
+      </section>
+    </main>
+
+    <%- include('partials/footer') %>
+    <script src="/js/main.js" defer></script>
+  </body>
+</html>
