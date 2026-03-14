@@ -1,6 +1,12 @@
 # Todo App
 
-A simple task manager built with Express, EJS, and MySQL.
+A simple task manager built with Express, EJS, and MySQL. 
+
+This app was built to make day-to-day planning feel less overwhelming and more realistic.
+Instead of only storing tasks, it helps you decide *when* to do them (calendar view),
+*how demanding* they are (energy levels: high, medium, low), and what to do with unfinished work
+using carryover actions (do today, move tomorrow, or unschedule).
+The goal is to support better daily focus, clearer priorities, and fewer forgotten due items with the advent of a daily push notifications email reminder.
 
 It supports account login/signup, task planning, calendar view, carryover decisions, and due-date reminder notifications by email.
 

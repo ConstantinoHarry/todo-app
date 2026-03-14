@@ -264,7 +264,7 @@
                   </button>
 
                   <div class="task-view-toggle" role="group" aria-label="Task view toggle">
-                    <a href="<%= buildListPath('required') %>" class="btn btn-ghost task-view-btn <%= selectedView === 'required' ? 'is-active' : '' %>">Required</a>
+                    <a href="<%= buildListPath('required') %>" class="btn btn-ghost task-view-btn <%= selectedView === 'required' ? 'is-active' : '' %>">All Tasks</a>
                     <a href="<%= buildListPath('completed') %>" class="btn btn-ghost task-view-btn <%= selectedView === 'completed' ? 'is-active' : '' %>">Completed</a>
                     <a href="<%= buildViewPath('calendar', selectedCalendarMonth, selectedCalendarDate) %>" class="btn btn-ghost task-view-btn <%= selectedView === 'calendar' ? 'is-active' : '' %>">Calendar</a>
                   </div>
@@ -320,6 +320,11 @@
               </div>
 
               <% if (selectedView === 'calendar') { %>
+                <section class="calendar-agenda calendar-agenda-placeholder" aria-label="Open date details in modal">
+                  <p class="empty-state-title">Open a day to manage tasks.</p>
+                  <p class="empty-state">Click any date or task chip and details will open in a modal.</p>
+                </section>
+
                 <div class="calendar-toolbar">
                   <div class="calendar-nav" role="navigation" aria-label="Calendar month navigation">
                     <a href="<%= buildViewPath('calendar', calendarView.prevMonthKey) %>" class="btn btn-ghost calendar-nav-btn">&larr; Previous</a>
@@ -381,11 +386,6 @@
                     <% }); %>
                   </div>
                 </section>
-
-                <section class="calendar-agenda calendar-agenda-placeholder" aria-label="Open date details in modal">
-                  <p class="empty-state-title">Open a day to manage tasks.</p>
-                  <p class="empty-state">Click any date or task chip and details will open in a modal.</p>
-                </section>
               <% } else if (!visibleTodos.length) { %>
                 <div class="empty-state-card">
                   <p class="empty-state-title"><%= selectedView === 'completed' ? 'No completed tasks found.' : 'No required tasks found.' %></p>
@@ -396,8 +396,22 @@
               <% } else { %>
                 <ul class="todo-list">
                   <% visibleTodos.forEach(function(todo) { %>
-                    <li class="todo-item <%= selectedView === 'completed' ? 'completed' : '' %>">
-                      <div class="todo-main">
+                    <li
+                      class="todo-item <%= selectedView === 'completed' ? 'completed' : '' %> <%= selectedView === 'required' ? 'todo-item--editable' : '' %>"
+                      <% if (selectedView === 'required') { %>
+                        data-open-edit-task-modal="true"
+                        data-todo-id="<%= todo.id %>"
+                        data-todo-text="<%= todo.text %>"
+                        data-todo-description="<%= todo.description || '' %>"
+                        data-todo-subtasks="<%= JSON.stringify(todo.subtasks || []) %>"
+                        data-todo-energy="<%= todo.energy_level %>"
+                        data-todo-deadline="<%= toDatetimeLocal(todo.deadline) %>"
+                        tabindex="0"
+                      <% } %>
+                    >
+                      <div
+                        class="todo-main todo-main-edit-trigger <%= selectedView === 'required' ? 'todo-main-editable' : '' %>"
+                      >
                         <form action="/todos/<%= todo.id %>/toggle?_method=PATCH" method="POST" class="inline-form">
                           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
                           <input type="hidden" name="returnTo" value="<%= returnTo %>" />
@@ -426,125 +440,72 @@
                           </p>
                         <% } %>
 
-                        <% if (selectedView === 'required') { %>
-                          <details class="edit-panel">
-                            <summary>Edit task</summary>
-                            <form action="/todos/<%= todo.id %>?_method=PATCH" method="POST" class="edit-form">
-                              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                              <input type="hidden" name="returnTo" value="<%= returnTo %>" />
-
-                              <div class="form-field">
-                                <label for="edit-text-<%= todo.id %>">Task text</label>
-                                <input
-                                  id="edit-text-<%= todo.id %>"
-                                  type="text"
-                                  name="text"
-                                  value="<%= todo.text %>"
-                                  maxlength="255"
-                                  required
-                                />
-                              </div>
-
-                              <div class="form-field">
-                                <label for="edit-energy-<%= todo.id %>">Energy level</label>
-                                <select id="edit-energy-<%= todo.id %>" name="energyLevel">
-                                  <option value="high" <%= todo.energy_level === 'high' ? 'selected' : '' %>>⚡ High Energy</option>
-                                  <option value="medium" <%= todo.energy_level === 'medium' ? 'selected' : '' %>>😊 Medium Energy</option>
-                                  <option value="low" <%= todo.energy_level === 'low' ? 'selected' : '' %>>😴 Low Energy</option>
-                                </select>
-                              </div>
-
-                              <div class="form-field">
-                                <label for="edit-deadline-<%= todo.id %>">Deadline <span class="field-optional">(optional)</span></label>
-                                <input
-                                  id="edit-deadline-<%= todo.id %>"
-                                  type="datetime-local"
-                                  name="deadline"
-                                  value="<%= toDatetimeLocal(todo.deadline) %>"
-                                />
-                              </div>
-
-                              <button type="submit" class="btn btn-secondary">Save Changes</button>
-                            </form>
-                          </details>
-
-                          <%
-                            var _subTasks = todo.subtasks || [];
-                            var _doneSubs = _subTasks.filter(function(s) { return s.completed; }).length;
-                            var _totalSubs = _subTasks.length;
-                            var _subPct = _totalSubs > 0 ? Math.round((_doneSubs / _totalSubs) * 100) : 0;
-                          %>
-
-                          <details class="subtask-section">
-                            <summary class="subtask-summary">
-                              <span class="subtask-summary-label">Subtasks</span>
-                              <% if (_totalSubs > 0) { %>
-                                <span class="subtask-count"><%= _doneSubs %>/<%= _totalSubs %> done</span>
-                              <% } else { %>
-                                <span class="subtask-count subtask-count-empty">none yet</span>
-                              <% } %>
-                            </summary>
-
-                            <% if (_totalSubs > 0) { %>
-                              <div class="subtask-progress-wrap">
-                                <progress
-                                  class="subtask-progress-bar"
-                                  value="<%= _subPct %>"
-                                  max="100"
-                                  aria-label="Subtask completion progress"
-                                ></progress>
-                                <span class="subtask-progress-label"><%= _subPct %>% complete</span>
-                              </div>
-                            <% } %>
-
-                            <% if (_subTasks.length > 0) { %>
-                              <ul class="subtask-list">
-                                <% _subTasks.forEach(function(subtask) { %>
-                                  <li class="subtask-row">
-                                    <form action="/todos/<%= todo.id %>/subtasks/<%= subtask.id %>/toggle?_method=PATCH" method="POST" class="inline-form subtask-toggle-form">
-                                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                                      <input type="hidden" name="returnTo" value="<%= returnTo %>" />
-                                      <label class="checkbox-row subtask-label" for="subtask-<%= subtask.id %>">
-                                        <input
-                                          id="subtask-<%= subtask.id %>"
-                                          type="checkbox"
-                                          onchange="this.form.submit()"
-                                          <%= subtask.completed ? 'checked' : '' %>
-                                        />
-                                        <span class="subtask-text <%= subtask.completed ? 'is-done' : '' %>"><%= subtask.text %></span>
-                                      </label>
-                                    </form>
-                                    <form action="/todos/<%= todo.id %>/subtasks/<%= subtask.id %>?_method=DELETE" method="POST" class="inline-form">
-                                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                                      <input type="hidden" name="returnTo" value="<%= returnTo %>" />
-                                      <button type="submit" class="subtask-delete-btn" aria-label="Delete subtask">&times;</button>
-                                    </form>
-                                  </li>
-                                <% }); %>
-                              </ul>
-                            <% } %>
-
-                            <form class="subtask-add-form" action="/todos/<%= todo.id %>/subtasks" method="POST">
-                              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                              <input type="hidden" name="returnTo" value="<%= returnTo %>" />
-                              <div class="subtask-input-row">
-                                <input
-                                  type="text"
-                                  name="text"
-                                  placeholder="Add a subtask…"
-                                  maxlength="255"
-                                  class="subtask-input"
-                                />
-                                <button type="submit" class="btn btn-ghost subtask-add-btn">Add</button>
-                              </div>
-                            </form>
-                          </details>
-                        <% } else if ((todo.subtasks || []).length > 0) { %>
+                        <% if ((todo.subtasks || []).length > 0 && selectedView !== 'required') { %>
                           <p class="subtask-summary-compact">
                             <span class="subtask-count"><%= (todo.subtasks || []).filter(function(s){ return s.completed; }).length %>/<%= (todo.subtasks || []).length %> subtasks done</span>
                           </p>
                         <% } %>
                       </div>
+
+                      <% if (selectedView === 'required') { %>
+                        <%
+                          var _subTasks = todo.subtasks || [];
+                          var _doneSubs = _subTasks.filter(function(s) { return s.completed; }).length;
+                          var _totalSubs = _subTasks.length;
+                          var _subPct = _totalSubs > 0 ? Math.round((_doneSubs / _totalSubs) * 100) : 0;
+                        %>
+
+                        <details class="subtask-section">
+                          <summary class="subtask-summary">
+                            <span class="subtask-summary-label">Subtasks</span>
+                            <% if (_totalSubs > 0) { %>
+                              <span class="subtask-count"><%= _doneSubs %>/<%= _totalSubs %> done</span>
+                            <% } else { %>
+                              <span class="subtask-count subtask-count-empty">none yet</span>
+                            <% } %>
+                          </summary>
+
+                          <% if (_totalSubs > 0) { %>
+                            <div class="subtask-progress-wrap">
+                              <progress
+                                class="subtask-progress-bar"
+                                value="<%= _subPct %>"
+                                max="100"
+                                aria-label="Subtask completion progress"
+                              ></progress>
+                              <span class="subtask-progress-label"><%= _subPct %>% complete</span>
+                            </div>
+                          <% } %>
+
+                          <% if (_subTasks.length > 0) { %>
+                            <ul class="subtask-list">
+                              <% _subTasks.forEach(function(subtask) { %>
+                                <li class="subtask-row">
+                                  <form action="/todos/<%= todo.id %>/subtasks/<%= subtask.id %>/toggle?_method=PATCH" method="POST" class="inline-form subtask-toggle-form">
+                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                                    <input type="hidden" name="returnTo" value="<%= returnTo %>" />
+                                    <label class="checkbox-row subtask-label" for="subtask-<%= subtask.id %>">
+                                      <input
+                                        id="subtask-<%= subtask.id %>"
+                                        type="checkbox"
+                                        onchange="this.form.submit()"
+                                        <%= subtask.completed ? 'checked' : '' %>
+                                      />
+                                      <span class="subtask-text <%= subtask.completed ? 'is-done' : '' %>"><%= subtask.text %></span>
+                                    </label>
+                                  </form>
+                                  <form action="/todos/<%= todo.id %>/subtasks/<%= subtask.id %>?_method=DELETE" method="POST" class="inline-form">
+                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                                    <input type="hidden" name="returnTo" value="<%= returnTo %>" />
+                                    <button type="submit" class="subtask-delete-btn" aria-label="Delete subtask">&times;</button>
+                                  </form>
+                                </li>
+                              <% }); %>
+                            </ul>
+                          <% } %>
+
+                        </details>
+                      <% } %>
 
                       <div class="todo-actions">
                         <span class="badge badge-<%= todo.energy_level %>">
@@ -658,6 +619,100 @@
       </div>
     </div>
 
+    <div class="task-modal-backdrop" data-edit-task-modal hidden>
+      <div class="task-modal" role="dialog" aria-modal="true" aria-labelledby="editTaskModalTitle">
+        <div class="task-modal-header">
+          <div>
+            <p class="section-kicker">Update</p>
+            <h3 id="editTaskModalTitle">Edit task</h3>
+          </div>
+          <button type="button" class="task-modal-close" aria-label="Close" data-close-edit-task-modal>&times;</button>
+        </div>
+
+        <form class="task-modal-form" action="/todos/0?_method=PATCH" method="POST" data-edit-task-form>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <input type="hidden" name="returnTo" value="<%= returnTo %>" />
+
+          <div class="form-field">
+            <label for="editTaskModalText">Task name</label>
+            <input
+              id="editTaskModalText"
+              type="text"
+              name="text"
+              maxlength="255"
+              required
+              data-edit-task-text
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="editTaskModalDescription">Description <span class="field-optional">(optional)</span></label>
+            <textarea
+              id="editTaskModalDescription"
+              name="description"
+              maxlength="1000"
+              rows="3"
+              data-edit-task-description
+            ></textarea>
+          </div>
+
+          <div class="task-modal-row task-modal-row-2">
+            <div class="form-field">
+              <label for="editTaskModalEnergy">Energy level</label>
+              <select id="editTaskModalEnergy" name="energyLevel" data-edit-task-energy>
+                <option value="high">⚡ High Energy</option>
+                <option value="medium">😊 Medium Energy</option>
+                <option value="low">😴 Low Energy</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label for="editTaskModalDeadline">Due date & time <span class="field-optional">(optional)</span></label>
+              <input
+                id="editTaskModalDeadline"
+                type="datetime-local"
+                name="deadline"
+                data-edit-task-deadline
+              />
+            </div>
+          </div>
+
+          <div class="task-modal-actions">
+            <button type="button" class="btn btn-ghost" data-close-edit-task-modal>Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+
+        <section class="task-modal-subtasks" aria-label="Subtasks">
+          <div class="task-subtasks-header">
+            <label>Subtasks</label>
+            <button type="button" class="btn btn-ghost" data-edit-subtask-open>Add subtask</button>
+          </div>
+
+          <p class="todo-meta" data-edit-subtask-empty>No subtasks yet.</p>
+          <ul class="subtask-list" data-edit-subtask-list></ul>
+
+          <form class="subtask-add-form task-modal-subtask-add" action="/todos/0/subtasks" method="POST" data-edit-subtask-form hidden>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <input type="hidden" name="returnTo" value="<%= returnTo %>" />
+            <div class="subtask-input-row">
+              <input
+                type="text"
+                name="text"
+                placeholder="Add a subtask…"
+                maxlength="255"
+                class="subtask-input"
+                required
+                data-edit-subtask-input
+              />
+              <button type="submit" class="btn btn-ghost subtask-add-btn">Save</button>
+              <button type="button" class="btn btn-ghost" data-edit-subtask-cancel>Cancel</button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </div>
+
     <% if (selectedView === 'calendar' && calendarAgenda) { %>
       <div class="calendar-agenda-modal-backdrop" data-calendar-agenda-modal>
         <div class="calendar-agenda-modal" role="dialog" aria-modal="true" aria-labelledby="calendarAgendaTitle">
@@ -723,7 +778,17 @@
           <% } else { %>
             <ul class="calendar-agenda-list">
               <% calendarAgenda.tasks.forEach(function(todo) { %>
-                <li class="calendar-agenda-item <%= todo.completed ? 'is-completed' : '' %>">
+                <li
+                  class="calendar-agenda-item <%= todo.completed ? 'is-completed' : '' %> todo-item--editable"
+                  data-open-edit-task-modal="true"
+                  data-todo-id="<%= todo.id %>"
+                  data-todo-text="<%= todo.text %>"
+                  data-todo-description="<%= todo.description || '' %>"
+                  data-todo-subtasks="<%= JSON.stringify(todo.subtasks || []) %>"
+                  data-todo-energy="<%= todo.energy_level %>"
+                  data-todo-deadline="<%= toDatetimeLocal(todo.deadline) %>"
+                  tabindex="0"
+                >
                   <div class="calendar-agenda-main">
                     <div class="calendar-agenda-topline">
                       <h4 class="calendar-agenda-title"><%= todo.text %></h4>
@@ -735,47 +800,6 @@
                     <% if (todo.description) { %>
                       <p class="calendar-agenda-description"><%= todo.description %></p>
                     <% } %>
-
-                    <details class="calendar-agenda-edit-panel">
-                      <summary>Edit task</summary>
-                      <form action="/todos/<%= todo.id %>?_method=PATCH" method="POST" class="calendar-agenda-edit-form">
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                        <input type="hidden" name="returnTo" value="<%= returnTo %>" />
-
-                        <div class="form-field">
-                          <label for="calendar-edit-text-<%= todo.id %>">Task name</label>
-                          <input
-                            id="calendar-edit-text-<%= todo.id %>"
-                            type="text"
-                            name="text"
-                            value="<%= todo.text %>"
-                            maxlength="255"
-                            required
-                          />
-                        </div>
-
-                        <div class="form-field">
-                          <label for="calendar-edit-energy-<%= todo.id %>">Energy level</label>
-                          <select id="calendar-edit-energy-<%= todo.id %>" name="energyLevel">
-                            <option value="high" <%= todo.energy_level === 'high' ? 'selected' : '' %>>⚡ High Energy</option>
-                            <option value="medium" <%= todo.energy_level === 'medium' ? 'selected' : '' %>>😊 Medium Energy</option>
-                            <option value="low" <%= todo.energy_level === 'low' ? 'selected' : '' %>>😴 Low Energy</option>
-                          </select>
-                        </div>
-
-                        <div class="form-field">
-                          <label for="calendar-edit-deadline-<%= todo.id %>">Due date & time</label>
-                          <input
-                            id="calendar-edit-deadline-<%= todo.id %>"
-                            type="datetime-local"
-                            name="deadline"
-                            value="<%= toDatetimeLocal(todo.deadline) %>"
-                          />
-                        </div>
-
-                        <button type="submit" class="btn btn-secondary">Save</button>
-                      </form>
-                    </details>
 
                     <div class="calendar-agenda-meta-row">
                       <% if (todo.deadline) { %>

@@ -41,13 +41,13 @@ async function toggleTodo(userId, id) {
   return result.affectedRows;
 }
 
-async function updateTodo(userId, id, text, energyLevel, deadline) {
+async function updateTodo(userId, id, text, description, energyLevel, deadline) {
   const sql = `
     UPDATE todos
-    SET text = ?, energy_level = ?, deadline = ?, updated_at = CURRENT_TIMESTAMP
+    SET text = ?, description = ?, energy_level = ?, deadline = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ? AND user_id = ?
   `;
-  const [result] = await pool.query(sql, [text, energyLevel, deadline || null, id, userId]);
+  const [result] = await pool.query(sql, [text, description || null, energyLevel, deadline || null, id, userId]);
   return result.affectedRows;
 }
 

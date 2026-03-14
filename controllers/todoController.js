@@ -89,6 +89,17 @@ function addMessageToPath(path, key, message) {
   return `${path}${queryChar}${key}=${encodeURIComponent(message)}`;
 }
 
+function wantsJsonResponse(req) {
+  if (req.xhr) {
+    return true;
+  }
+
+  const accepted = req.get('accept') || '';
+  const requestedWith = req.get('x-requested-with') || '';
+
+  return accepted.includes('application/json') || requestedWith.toLowerCase() === 'xmlhttprequest';
+}
+
 function normalizeListView(raw) {
   if (typeof raw !== 'string') {
     return 'required';
@@ -753,6 +764,7 @@ async function updateTodo(req, res) {
 
     const id = Number.parseInt(req.params.id, 10);
     const text = typeof req.body.text === 'string' ? req.body.text.trim() : '';
+    const description = typeof req.body.description === 'string' ? req.body.description.trim() : '';
     const energyLevel = typeof req.body.energyLevel === 'string' ? req.body.energyLevel : '';
     const deadline = parseDeadline(req.body.deadline);
 
@@ -768,11 +780,15 @@ async function updateTodo(req, res) {
       return res.redirect(addMessageToPath(returnTo, 'error', 'Task text must be 255 characters or fewer.'));
     }
 
+    if (description.length > 1000) {
+      return res.redirect(addMessageToPath(returnTo, 'error', 'Task description must be 1000 characters or fewer.'));
+    }
+
     if (!ALLOWED_ENERGY_LEVELS.includes(energyLevel)) {
       return res.redirect(addMessageToPath(returnTo, 'error', 'Please choose a valid energy level.'));
     }
 
-    await updateTodoModel(userId, id, text, energyLevel, deadline);
+    await updateTodoModel(userId, id, text, description, energyLevel, deadline);
     return res.redirect(addMessageToPath(returnTo, 'success', 'Task updated successfully.'));
   } catch (error) {
     console.error('Failed to update todo:', error);
@@ -822,10 +838,14 @@ async function clearCompletedTodos(req, res) {
 
 async function createSubtask(req, res) {
   const returnTo = getSafeReturnTo(req.body.returnTo || '/');
+  const expectsJson = wantsJsonResponse(req);
 
   try {
     const userId = req.session && req.session.user ? req.session.user.id : null;
     if (!userId) {
+      if (expectsJson) {
+        return res.status(401).json({ success: false, error: 'Please login to continue.' });
+      }
       return res.redirect('/login?error=' + encodeURIComponent('Please login to continue.'));
     }
 
@@ -833,67 +853,148 @@ async function createSubtask(req, res) {
     const text = typeof req.body.text === 'string' ? req.body.text.trim() : '';
 
     if (Number.isNaN(todoId)) {
+      if (expectsJson) {
+        return res.status(400).json({ success: false, error: 'Invalid task ID.' });
+      }
       return res.redirect(addMessageToPath(returnTo, 'error', 'Invalid task ID.'));
     }
 
     if (!text) {
+      if (expectsJson) {
+        return res.status(400).json({ success: false, error: 'Subtask text is required.' });
+      }
       return res.redirect(addMessageToPath(returnTo, 'error', 'Subtask text is required.'));
     }
 
     if (text.length > 255) {
+      if (expectsJson) {
+        return res.status(400).json({ success: false, error: 'Subtask text must be 255 characters or fewer.' });
+      }
       return res.redirect(addMessageToPath(returnTo, 'error', 'Subtask text must be 255 characters or fewer.'));
     }
 
-    await createSubtaskModel(userId, todoId, text);
+    const subtaskId = await createSubtaskModel(userId, todoId, text);
+
+    if (!subtaskId) {
+      if (expectsJson) {
+        return res.status(404).json({ success: false, error: 'Task not found.' });
+      }
+      return res.redirect(addMessageToPath(returnTo, 'error', 'Task not found.'));
+    }
+
+    if (expectsJson) {
+      return res.status(200).json({
+        success: true,
+        subtask: {
+          id: subtaskId,
+          text,
+          completed: false
+        }
+      });
+    }
+
     return res.redirect(returnTo);
   } catch (error) {
     console.error('Failed to create subtask:', error);
+
+    if (expectsJson) {
+      return res.status(500).json({ success: false, error: 'Unable to add subtask right now.' });
+    }
+
     return res.redirect(addMessageToPath(returnTo, 'error', 'Unable to add subtask right now.'));
   }
 }
 
 async function toggleSubtask(req, res) {
   const returnTo = getSafeReturnTo(req.body.returnTo || '/');
+  const expectsJson = wantsJsonResponse(req);
 
   try {
     const userId = req.session && req.session.user ? req.session.user.id : null;
     if (!userId) {
+      if (expectsJson) {
+        return res.status(401).json({ success: false, error: 'Please login to continue.' });
+      }
       return res.redirect('/login?error=' + encodeURIComponent('Please login to continue.'));
     }
 
     const subtaskId = Number.parseInt(req.params.sid, 10);
 
     if (Number.isNaN(subtaskId)) {
+      if (expectsJson) {
+        return res.status(400).json({ success: false, error: 'Invalid subtask ID.' });
+      }
       return res.redirect(addMessageToPath(returnTo, 'error', 'Invalid subtask ID.'));
     }
 
-    await toggleSubtaskModel(userId, subtaskId);
+    const affectedRows = await toggleSubtaskModel(userId, subtaskId);
+
+    if (affectedRows === 0) {
+      if (expectsJson) {
+        return res.status(404).json({ success: false, error: 'Subtask not found.' });
+      }
+      return res.redirect(addMessageToPath(returnTo, 'error', 'Subtask not found.'));
+    }
+
+    if (expectsJson) {
+      return res.status(200).json({ success: true });
+    }
+
     return res.redirect(returnTo);
   } catch (error) {
     console.error('Failed to toggle subtask:', error);
+
+    if (expectsJson) {
+      return res.status(500).json({ success: false, error: 'Unable to update subtask.' });
+    }
+
     return res.redirect(addMessageToPath(returnTo, 'error', 'Unable to update subtask.'));
   }
 }
 
 async function deleteSubtask(req, res) {
   const returnTo = getSafeReturnTo(req.body.returnTo || '/');
+  const expectsJson = wantsJsonResponse(req);
 
   try {
     const userId = req.session && req.session.user ? req.session.user.id : null;
     if (!userId) {
+      if (expectsJson) {
+        return res.status(401).json({ success: false, error: 'Please login to continue.' });
+      }
       return res.redirect('/login?error=' + encodeURIComponent('Please login to continue.'));
     }
 
     const subtaskId = Number.parseInt(req.params.sid, 10);
 
     if (Number.isNaN(subtaskId)) {
+      if (expectsJson) {
+        return res.status(400).json({ success: false, error: 'Invalid subtask ID.' });
+      }
       return res.redirect(addMessageToPath(returnTo, 'error', 'Invalid subtask ID.'));
     }
 
-    await deleteSubtaskModel(userId, subtaskId);
+    const affectedRows = await deleteSubtaskModel(userId, subtaskId);
+
+    if (affectedRows === 0) {
+      if (expectsJson) {
+        return res.status(404).json({ success: false, error: 'Subtask not found.' });
+      }
+      return res.redirect(addMessageToPath(returnTo, 'error', 'Subtask not found.'));
+    }
+
+    if (expectsJson) {
+      return res.status(200).json({ success: true });
+    }
+
     return res.redirect(returnTo);
   } catch (error) {
     console.error('Failed to delete subtask:', error);
+
+    if (expectsJson) {
+      return res.status(500).json({ success: false, error: 'Unable to delete subtask.' });
+    }
+
     return res.redirect(addMessageToPath(returnTo, 'error', 'Unable to delete subtask.'));
   }
 }

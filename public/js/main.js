@@ -16,6 +16,135 @@ document.addEventListener('DOMContentLoaded', () => {
   const focusModeStorageKey = 'todo-focus-mode-enabled';
   const calendarAgendaModal = document.querySelector('[data-calendar-agenda-modal]');
   const calendarAgendaCloseButton = document.querySelector('[data-calendar-agenda-close]');
+  const editTaskModal = document.querySelector('[data-edit-task-modal]');
+  const editTaskCloseButtons = document.querySelectorAll('[data-close-edit-task-modal]');
+  const editTaskForm = document.querySelector('[data-edit-task-form]');
+  const editTaskTextInput = document.querySelector('[data-edit-task-text]');
+  const editTaskDescriptionInput = document.querySelector('[data-edit-task-description]');
+  const editTaskEnergyInput = document.querySelector('[data-edit-task-energy]');
+  const editTaskDeadlineInput = document.querySelector('[data-edit-task-deadline]');
+  const editSubtaskForm = document.querySelector('[data-edit-subtask-form]');
+  const editSubtaskInput = document.querySelector('[data-edit-subtask-input]');
+  const editSubtaskList = document.querySelector('[data-edit-subtask-list]');
+  const editSubtaskEmptyState = document.querySelector('[data-edit-subtask-empty]');
+  const editSubtaskOpenButton = document.querySelector('[data-edit-subtask-open]');
+  const editSubtaskCancelButton = document.querySelector('[data-edit-subtask-cancel]');
+  let activeEditTodoId = '';
+  let activeEditTodoElement = null;
+  let activeEditSubtasks = [];
+
+  function parseTodoSubtasks(rawSubtasks) {
+    if (typeof rawSubtasks !== 'string' || !rawSubtasks.trim()) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(rawSubtasks);
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      return parsed
+        .filter((subtask) => subtask && typeof subtask === 'object')
+        .map((subtask) => ({
+          id: Number(subtask.id),
+          text: typeof subtask.text === 'string' ? subtask.text : '',
+          completed: Boolean(subtask.completed)
+        }))
+        .filter((subtask) => Number.isInteger(subtask.id) && subtask.id > 0 && subtask.text.trim());
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function showEditSubtaskForm(visible) {
+    if (!editSubtaskForm) {
+      return;
+    }
+
+    editSubtaskForm.hidden = !visible;
+
+    if (!visible && editSubtaskInput) {
+      editSubtaskInput.value = '';
+    }
+  }
+
+  function renderEditSubtasks() {
+    if (!editSubtaskList) {
+      return;
+    }
+
+    editSubtaskList.innerHTML = activeEditSubtasks.map((subtask) => {
+      const subtaskId = Number(subtask.id);
+      const inputId = `edit-subtask-${subtaskId}`;
+      return `
+        <li class="subtask-row" data-edit-subtask-row="${subtaskId}">
+          <label class="checkbox-row subtask-label" for="${inputId}">
+            <input
+              id="${inputId}"
+              type="checkbox"
+              data-edit-subtask-toggle="${subtaskId}"
+              ${subtask.completed ? 'checked' : ''}
+            />
+            <span class="subtask-text ${subtask.completed ? 'is-done' : ''}">${escapeHtml(subtask.text)}</span>
+          </label>
+          <button
+            type="button"
+            class="subtask-delete-btn"
+            aria-label="Delete subtask"
+            data-edit-subtask-delete="${subtaskId}"
+          >&times;</button>
+        </li>
+      `;
+    }).join('');
+
+    if (editSubtaskEmptyState) {
+      editSubtaskEmptyState.hidden = activeEditSubtasks.length > 0;
+    }
+
+    if (activeEditTodoElement) {
+      activeEditTodoElement.dataset.todoSubtasks = JSON.stringify(activeEditSubtasks);
+    }
+  }
+
+  function getEditModalMeta() {
+    const csrfInput = editTaskForm && editTaskForm.querySelector('input[name="_csrf"]');
+    const returnToInput = editTaskForm && editTaskForm.querySelector('input[name="returnTo"]');
+
+    return {
+      csrfToken: csrfInput ? csrfInput.value : '',
+      returnTo: returnToInput ? returnToInput.value : '/'
+    };
+  }
+
+  async function submitSubtaskModalRequest(url, params) {
+    const response = await window.fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: params.toString()
+    });
+
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok || !payload || !payload.success) {
+      throw new Error(payload && payload.error ? payload.error : 'Unable to update subtask right now.');
+    }
+
+    return payload;
+  }
 
   function closeCalendarAgendaModal() {
     if (!calendarAgendaCloseButton || !calendarAgendaCloseButton.href) {
@@ -107,6 +236,22 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.remove('modal-open');
   }
 
+  function closeEditTaskModal() {
+    if (!editTaskModal) {
+      return;
+    }
+
+    editTaskModal.hidden = true;
+    activeEditTodoId = '';
+    activeEditTodoElement = null;
+    activeEditSubtasks = [];
+    renderEditSubtasks();
+    showEditSubtaskForm(false);
+    if (!addTaskModal || addTaskModal.hidden) {
+      document.body.classList.remove('modal-open');
+    }
+  }
+
   function openAddTaskModal() {
     if (!addTaskModal) {
       return;
@@ -118,6 +263,63 @@ document.addEventListener('DOMContentLoaded', () => {
     if (taskNameInput) {
       taskNameInput.focus();
     }
+  }
+
+  function openEditTaskModal(todo) {
+    if (!editTaskModal || !editTaskForm || !todo) {
+      return;
+    }
+
+    const todoId = todo.dataset.todoId;
+    if (!todoId) {
+      return;
+    }
+
+    activeEditTodoId = todoId;
+    activeEditTodoElement = todo;
+    activeEditSubtasks = parseTodoSubtasks(todo.dataset.todoSubtasks);
+    renderEditSubtasks();
+    showEditSubtaskForm(false);
+
+    editTaskForm.action = `/todos/${todoId}?_method=PATCH`;
+
+    if (editSubtaskForm) {
+      editSubtaskForm.action = `/todos/${todoId}/subtasks`;
+    }
+
+    if (editSubtaskInput) {
+      editSubtaskInput.value = '';
+    }
+
+    if (editTaskTextInput) {
+      editTaskTextInput.value = todo.dataset.todoText || '';
+    }
+
+    if (editTaskDescriptionInput) {
+      editTaskDescriptionInput.value = todo.dataset.todoDescription || '';
+    }
+
+    if (editTaskEnergyInput) {
+      editTaskEnergyInput.value = todo.dataset.todoEnergy || 'medium';
+    }
+
+    if (editTaskDeadlineInput) {
+      editTaskDeadlineInput.value = todo.dataset.todoDeadline || '';
+    }
+
+    editTaskModal.hidden = false;
+    document.body.classList.add('modal-open');
+
+    if (editTaskTextInput) {
+      editTaskTextInput.focus();
+      editTaskTextInput.select();
+    }
+  }
+
+  function shouldIgnoreEditTrigger(target) {
+    return Boolean(
+      target.closest('input[type="checkbox"], button, a, select, textarea, details, summary, .subtask-section, .todo-actions, .calendar-agenda-actions, .calendar-agenda-add-panel')
+    );
   }
 
   function collectSubtasks() {
@@ -173,10 +375,41 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (editTaskCloseButtons.length) {
+    editTaskCloseButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        closeEditTaskModal();
+      });
+    });
+  }
+
+  if (editSubtaskOpenButton) {
+    editSubtaskOpenButton.addEventListener('click', () => {
+      showEditSubtaskForm(true);
+      if (editSubtaskInput) {
+        editSubtaskInput.focus();
+      }
+    });
+  }
+
+  if (editSubtaskCancelButton) {
+    editSubtaskCancelButton.addEventListener('click', () => {
+      showEditSubtaskForm(false);
+    });
+  }
+
   if (addTaskModal) {
     addTaskModal.addEventListener('click', (event) => {
       if (event.target === addTaskModal) {
         closeAddTaskModal();
+      }
+    });
+  }
+
+  if (editTaskModal) {
+    editTaskModal.addEventListener('click', (event) => {
+      if (event.target === editTaskModal) {
+        closeEditTaskModal();
       }
     });
   }
@@ -195,9 +428,56 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    if (event.key === 'Escape' && editTaskModal && !editTaskModal.hidden) {
+      closeEditTaskModal();
+      return;
+    }
+
     if (event.key === 'Escape' && calendarAgendaModal) {
       closeCalendarAgendaModal();
     }
+  });
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const trigger = target.closest('[data-open-edit-task-modal="true"]');
+    if (!trigger) {
+      return;
+    }
+
+    if (shouldIgnoreEditTrigger(target)) {
+      return;
+    }
+
+    event.preventDefault();
+    openEditTaskModal(trigger);
+  });
+
+  document.addEventListener('keydown', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const trigger = target.closest('[data-open-edit-task-modal="true"]');
+    if (!trigger) {
+      return;
+    }
+
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+
+    if (shouldIgnoreEditTrigger(target)) {
+      return;
+    }
+
+    event.preventDefault();
+    openEditTaskModal(trigger);
   });
 
   if (addSubtaskRowButton && subtaskList) {
@@ -259,6 +539,109 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+  }
+
+  if (editSubtaskForm) {
+    editSubtaskForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      if (!activeEditTodoId || !editSubtaskInput) {
+        return;
+      }
+
+      const text = typeof editSubtaskInput.value === 'string' ? editSubtaskInput.value.trim() : '';
+      if (!text) {
+        editSubtaskInput.focus();
+        return;
+      }
+
+      const { csrfToken, returnTo } = getEditModalMeta();
+      const params = new URLSearchParams();
+      params.set('_csrf', csrfToken);
+      params.set('returnTo', returnTo);
+      params.set('text', text);
+
+      try {
+        const payload = await submitSubtaskModalRequest(`/todos/${activeEditTodoId}/subtasks`, params);
+
+        if (payload.subtask) {
+          activeEditSubtasks.push({
+            id: payload.subtask.id,
+            text: payload.subtask.text,
+            completed: Boolean(payload.subtask.completed)
+          });
+          renderEditSubtasks();
+        }
+
+        editSubtaskInput.value = '';
+        editSubtaskInput.focus();
+      } catch (error) {
+        window.alert(error.message || 'Unable to add subtask right now.');
+      }
+    });
+  }
+
+  if (editSubtaskList) {
+    editSubtaskList.addEventListener('change', async (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) {
+        return;
+      }
+
+      const subtaskId = Number.parseInt(target.getAttribute('data-edit-subtask-toggle') || '', 10);
+      if (Number.isNaN(subtaskId) || !activeEditTodoId) {
+        return;
+      }
+
+      const previousChecked = !target.checked;
+      const { csrfToken, returnTo } = getEditModalMeta();
+      const params = new URLSearchParams();
+      params.set('_csrf', csrfToken);
+      params.set('returnTo', returnTo);
+
+      try {
+        await submitSubtaskModalRequest(`/todos/${activeEditTodoId}/subtasks/${subtaskId}/toggle?_method=PATCH`, params);
+        activeEditSubtasks = activeEditSubtasks.map((subtask) => (
+          Number(subtask.id) === subtaskId
+            ? { ...subtask, completed: target.checked }
+            : subtask
+        ));
+        renderEditSubtasks();
+      } catch (error) {
+        target.checked = previousChecked;
+        window.alert(error.message || 'Unable to update subtask right now.');
+      }
+    });
+
+    editSubtaskList.addEventListener('click', async (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const deleteButton = target.closest('[data-edit-subtask-delete]');
+      if (!deleteButton || !activeEditTodoId) {
+        return;
+      }
+
+      const subtaskId = Number.parseInt(deleteButton.getAttribute('data-edit-subtask-delete') || '', 10);
+      if (Number.isNaN(subtaskId)) {
+        return;
+      }
+
+      const { csrfToken, returnTo } = getEditModalMeta();
+      const params = new URLSearchParams();
+      params.set('_csrf', csrfToken);
+      params.set('returnTo', returnTo);
+
+      try {
+        await submitSubtaskModalRequest(`/todos/${activeEditTodoId}/subtasks/${subtaskId}?_method=DELETE`, params);
+        activeEditSubtasks = activeEditSubtasks.filter((subtask) => Number(subtask.id) !== subtaskId);
+        renderEditSubtasks();
+      } catch (error) {
+        window.alert(error.message || 'Unable to delete subtask right now.');
+      }
+    });
   }
 
   resetAddTaskForm({ resetNativeForm: false });
