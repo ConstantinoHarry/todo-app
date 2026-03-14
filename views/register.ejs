@@ -7,75 +7,279 @@
     <link rel="stylesheet" href="/css/style.css" />
   </head>
   <body>
-    <main class="auth-shell">
-      <section class="auth-card" aria-label="Registration form">
-        <div class="auth-header">
-          <p class="auth-kicker">Create account</p>
-          <h1>Register for Todo App</h1>
-          <p class="auth-subtitle">
-            Create your account to manage your personal task list securely.
-          </p>
+    <main class="auth-shell premium-auth-shell">
+      <section class="auth-layout auth-layout-premium" aria-label="Registration page">
+        <div class="auth-panel auth-panel-brand auth-panel-brand-premium">
+          <div class="auth-brand-badge">Todo-App</div>
+
+          <div class="auth-brand-copy auth-animate auth-animate-delay-1">
+            <p class="auth-kicker">Create your account</p>
+            <h1>Build a more intentional workflow from day one</h1>
+            <p class="auth-subtitle auth-subtitle-brand">
+              Start with a premium task experience designed for clarity, energy-aware planning, and daily progress.
+            </p>
+
+            <div class="auth-feature-grid">
+              <div class="auth-feature-card">
+                <strong>Premium task flow</strong>
+                <span>Capture, prioritize, and complete work with less friction.</span>
+              </div>
+              <div class="auth-feature-card">
+                <strong>Smarter planning</strong>
+                <span>Balance difficult and lighter tasks around how you feel.</span>
+              </div>
+              <div class="auth-feature-card">
+                <strong>Secure by default</strong>
+                <span>Your personal productivity data stays tied to your account.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="auth-brand-orb auth-brand-orb-one"></div>
+          <div class="auth-brand-orb auth-brand-orb-two"></div>
+          <div class="auth-grid-glow"></div>
         </div>
 
-        <% if (error) { %>
-          <section class="alert alert-error" aria-live="polite">
-            <p><%= error %></p>
-          </section>
-        <% } %>
-
-        <% if (success) { %>
-          <section class="alert alert-success" aria-live="polite">
-            <p><%= success %></p>
-          </section>
-        <% } %>
-
-        <form class="auth-form" action="/register" method="POST">
-          <div class="form-field">
-            <label for="email">Email</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="you@example.com"
-              required
-              autocomplete="email"
-            />
+        <section class="auth-card auth-panel auth-card-premium auth-animate auth-animate-delay-2" aria-label="Registration form">
+          <div class="auth-header">
+            <p class="auth-kicker">Join Todo App</p>
+            <h2>Create account</h2>
+            <p class="auth-subtitle">
+              Set up your account and start organizing your work beautifully.
+            </p>
           </div>
 
-          <div class="form-field">
-            <label for="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="At least 8 characters"
-              required
-              minlength="8"
-              autocomplete="new-password"
-            />
+          <% if (error) { %>
+            <section class="alert alert-error" aria-live="polite">
+              <p><%= error %></p>
+            </section>
+          <% } %>
+
+          <% if (success) { %>
+            <section class="alert alert-success" aria-live="polite">
+              <p><%= success %></p>
+            </section>
+          <% } %>
+
+          <div class="auth-socials">
+            <button type="button" class="auth-social-btn" aria-label="Continue with Google">
+              <span>G</span>
+              <span>Continue with Google</span>
+            </button>
+            <button type="button" class="auth-social-btn" aria-label="Continue with GitHub">
+              <span>◐</span>
+              <span>Continue with GitHub</span>
+            </button>
           </div>
 
-          <div class="form-field">
-            <label for="confirmPassword">Confirm Password</label>
-            <input
-              id="confirmPassword"
-              name="confirmPassword"
-              type="password"
-              placeholder="Re-enter your password"
-              required
-              minlength="8"
-              autocomplete="new-password"
-            />
+          <div class="auth-divider" aria-hidden="true">
+            <span>or sign up with email</span>
           </div>
 
-          <button type="submit" class="btn btn-primary auth-submit">Create Account</button>
-        </form>
+          <form class="auth-form" action="/register" method="POST" novalidate data-register-form>
+            <div class="form-field">
+              <div class="floating-field">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder=" "
+                  required
+                  autocomplete="email"
+                />
+                <label for="email">Email address</label>
+              </div>
+              <small class="field-hint">We’ll use this to sign you in securely.</small>
+            </div>
 
-        <div class="auth-help">
-          <p>Already have an account?</p>
-          <a class="auth-back" href="/login">Back to login</a>
-        </div>
+            <div class="form-field">
+              <div class="floating-field auth-password-wrap">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder=" "
+                  required
+                  minlength="8"
+                  autocomplete="new-password"
+                  data-password-input
+                />
+                <label for="password">Password</label>
+                <button
+                  type="button"
+                  class="password-toggle"
+                  aria-label="Show password"
+                  data-password-toggle
+                  data-target="password"
+                >
+                  Show
+                </button>
+              </div>
+
+              <div class="password-strength" aria-live="polite">
+                <div class="password-strength-bar">
+                  <span data-strength-fill></span>
+                </div>
+                <div class="password-strength-meta">
+                  <strong data-strength-label>Weak</strong>
+                  <span data-strength-text>Use at least 8 characters, with letters and numbers.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-field">
+              <div class="floating-field auth-password-wrap">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  placeholder=" "
+                  required
+                  minlength="8"
+                  autocomplete="new-password"
+                  data-confirm-password-input
+                />
+                <label for="confirmPassword">Confirm password</label>
+                <button
+                  type="button"
+                  class="password-toggle"
+                  aria-label="Show password"
+                  data-password-toggle
+                  data-target="confirmPassword"
+                >
+                  Show
+                </button>
+              </div>
+
+              <small class="field-hint validation-hint" data-match-hint>
+                Re-enter your password to confirm it.
+              </small>
+            </div>
+
+            <label class="checkbox-row auth-checkbox-row auth-terms-row" for="terms">
+              <input id="terms" name="terms" type="checkbox" required />
+              <span>I agree to the Terms and Privacy Policy.</span>
+            </label>
+
+            <button type="submit" class="btn btn-primary auth-submit btn-block">
+              Create Premium Account
+            </button>
+          </form>
+
+          <div class="auth-note auth-note-soft">
+            <strong>Security tip:</strong> Choose a unique password you don’t use elsewhere.
+          </div>
+
+          <div class="auth-help auth-help-premium">
+            <p>Already have an account?</p>
+            <a class="auth-back" href="/login">Back to login</a>
+          </div>
+        </section>
       </section>
     </main>
+
+    <script>
+      document.addEventListener('click', function (event) {
+        const button = event.target.closest('[data-password-toggle]');
+        if (!button) return;
+
+        const targetId = button.getAttribute('data-target');
+        const input = document.getElementById(targetId);
+        if (!input) return;
+
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        button.textContent = isPassword ? 'Hide' : 'Show';
+        button.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+      });
+
+      (function () {
+        const form = document.querySelector('[data-register-form]');
+        if (!form) return;
+
+        const passwordInput = form.querySelector('[data-password-input]');
+        const confirmInput = form.querySelector('[data-confirm-password-input]');
+        const strengthFill = form.querySelector('[data-strength-fill]');
+        const strengthLabel = form.querySelector('[data-strength-label]');
+        const strengthText = form.querySelector('[data-strength-text]');
+        const matchHint = form.querySelector('[data-match-hint]');
+
+        function scorePassword(value) {
+          let score = 0;
+          if (value.length >= 8) score++;
+          if (/[A-Z]/.test(value)) score++;
+          if (/[a-z]/.test(value)) score++;
+          if (/[0-9]/.test(value)) score++;
+          if (/[^A-Za-z0-9]/.test(value)) score++;
+          return score;
+        }
+
+        function updateStrength() {
+          const value = passwordInput.value.trim();
+          const score = scorePassword(value);
+
+          let width = '20%';
+          let label = 'Weak';
+          let text = 'Use at least 8 characters, with letters and numbers.';
+          let color = '#ef4444';
+
+          if (score >= 2) {
+            width = '40%';
+            label = 'Fair';
+            text = 'Good start — add uppercase letters or symbols.';
+            color = '#f59e0b';
+          }
+          if (score >= 4) {
+            width = '72%';
+            label = 'Strong';
+            text = 'Strong password with a good mix of character types.';
+            color = '#3b82f6';
+          }
+          if (score >= 5 && value.length >= 10) {
+            width = '100%';
+            label = 'Excellent';
+            text = 'Excellent password strength.';
+            color = '#10b981';
+          }
+
+          strengthFill.style.width = width;
+          strengthFill.style.background = color;
+          strengthLabel.textContent = label;
+          strengthLabel.style.color = color;
+          strengthText.textContent = text;
+        }
+
+        function updateMatchState() {
+          const password = passwordInput.value;
+          const confirm = confirmInput.value;
+
+          if (!confirm.length) {
+            matchHint.textContent = 'Re-enter your password to confirm it.';
+            matchHint.classList.remove('is-error', 'is-success');
+            return;
+          }
+
+          if (password === confirm) {
+            matchHint.textContent = 'Passwords match.';
+            matchHint.classList.add('is-success');
+            matchHint.classList.remove('is-error');
+          } else {
+            matchHint.textContent = 'Passwords do not match yet.';
+            matchHint.classList.add('is-error');
+            matchHint.classList.remove('is-success');
+          }
+        }
+
+        passwordInput.addEventListener('input', function () {
+          updateStrength();
+          updateMatchState();
+        });
+
+        confirmInput.addEventListener('input', updateMatchState);
+
+        updateStrength();
+        updateMatchState();
+      })();
+    </script>
   </body>
 </html>

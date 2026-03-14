@@ -7,61 +7,160 @@
     <link rel="stylesheet" href="/css/style.css" />
   </head>
   <body>
-    <main class="auth-shell">
-      <section class="auth-card" aria-label="Login form">
-        <div class="auth-header">
-          <p class="auth-kicker">Secure authentication</p>
-          <h1>Login to Todo App</h1>
-          <p class="auth-subtitle">
-            Login with your registered account. Sessions are stored in MySQL for production-safe persistence.
-          </p>
-        </div>
+    <main class="auth-shell premium-auth-shell">
+      <section class="auth-layout auth-layout-premium" aria-label="Login page">
+        <div class="auth-panel auth-panel-brand auth-panel-brand-premium">
+          <div class="auth-brand-badge">Todo-App</div>
 
-        <% if (error) { %>
-          <section class="alert alert-error" aria-live="polite">
-            <p><%= error %></p>
-          </section>
-        <% } %>
+          <div class="auth-brand-copy auth-animate auth-animate-delay-1">
+            <p class="auth-kicker">Premium productivity</p>
+            <h1>Welcome back to your focused workspace</h1>
+            <p class="auth-subtitle auth-subtitle-brand">
+              Sign in to manage tasks, plan around your energy, and keep momentum with a calmer workflow.
+            </p>
 
-        <% if (success) { %>
-          <section class="alert alert-success" aria-live="polite">
-            <p><%= success %></p>
-          </section>
-        <% } %>
-
-        <form class="auth-form" action="/login" method="POST">
-          <div class="form-field">
-            <label for="email">Email</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="you@example.com"
-              required
-              autocomplete="email"
-            />
+            <div class="auth-feature-grid">
+              <div class="auth-feature-card">
+                <strong>Energy-aware planning</strong>
+                <span>Organize work around your real capacity, not just urgency.</span>
+              </div>
+              <div class="auth-feature-card">
+                <strong>Cleaner execution</strong>
+                <span>Reduce friction with a streamlined daily task experience.</span>
+              </div>
+              <div class="auth-feature-card">
+                <strong>Reliable sessions</strong>
+                <span>Secure authentication designed for production-ready use.</span>
+              </div>
+            </div>
           </div>
 
-          <div class="form-field">
-            <label for="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="Enter your password"
-              required
-              autocomplete="current-password"
-            />
+          <div class="auth-brand-orb auth-brand-orb-one"></div>
+          <div class="auth-brand-orb auth-brand-orb-two"></div>
+          <div class="auth-grid-glow"></div>
+        </div>
+
+        <section class="auth-card auth-panel auth-card-premium auth-animate auth-animate-delay-2" aria-label="Login form">
+          <div class="auth-header">
+            <p class="auth-kicker">Secure sign in</p>
+            <h2>Login</h2>
+            <p class="auth-subtitle">
+              Access your account and continue where you left off.
+            </p>
           </div>
 
-          <button type="submit" class="btn btn-primary auth-submit">Login</button>
-        </form>
+          <% if (error) { %>
+            <section class="alert alert-error" aria-live="polite">
+              <p><%= error %></p>
+            </section>
+          <% } %>
 
-        <div class="auth-help">
-          <p>New here?</p>
-          <a class="auth-back" href="/register">Create an account</a>
-        </div>
+          <% if (success) { %>
+            <section class="alert alert-success" aria-live="polite">
+              <p><%= success %></p>
+            </section>
+          <% } %>
+
+          <div class="auth-socials">
+            <button type="button" class="auth-social-btn" aria-label="Continue with Google">
+              <span>G</span>
+              <span>Continue with Google</span>
+            </button>
+            <button type="button" class="auth-social-btn" aria-label="Continue with GitHub">
+              <span>◐</span>
+              <span>Continue with GitHub</span>
+            </button>
+          </div>
+
+          <div class="auth-divider" aria-hidden="true">
+            <span>or continue with email</span>
+          </div>
+
+          <form class="auth-form" action="/login" method="POST" novalidate>
+            <div class="form-field">
+              <div class="floating-field">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder=" "
+                  required
+                  autocomplete="email"
+                />
+                <label for="email">Email address</label>
+              </div>
+              <small class="field-hint">Use the email associated with your account.</small>
+            </div>
+
+            <div class="form-field">
+              <div class="auth-label-row">
+                <span class="field-label-static">Password</span>
+                <a class="auth-inline-link" href="#">Forgot password?</a>
+              </div>
+
+              <div class="floating-field auth-password-wrap">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder=" "
+                  required
+                  autocomplete="current-password"
+                />
+                <label for="password">Password</label>
+                <button
+                  type="button"
+                  class="password-toggle"
+                  aria-label="Show password"
+                  data-password-toggle
+                  data-target="password"
+                >
+                  Show
+                </button>
+              </div>
+              <small class="field-hint">Your password is never displayed unless you choose to reveal it.</small>
+            </div>
+
+            <div class="auth-row">
+              <label class="checkbox-row auth-checkbox-row" for="rememberMe">
+                <input id="rememberMe" name="rememberMe" type="checkbox" />
+                <span>Remember me</span>
+              </label>
+
+              <span class="auth-meta-chip">256-bit encrypted session</span>
+            </div>
+
+            <button type="submit" class="btn btn-primary auth-submit btn-block">
+              Login to Dashboard
+            </button>
+          </form>
+
+          <div class="auth-note">
+            <strong>Private and secure:</strong> Your workspace is protected with authenticated access and persistent session handling.
+          </div>
+
+          <div class="auth-help auth-help-premium">
+            <p>Don’t have an account?</p>
+            <a class="auth-back" href="/register">Create one</a>
+          </div>
+        </section>
       </section>
     </main>
+
+    <script>
+      document.addEventListener('click', function (event) {
+        const button = event.target.closest('[data-password-toggle]');
+        if (!button) return;
+
+        const targetId = button.getAttribute('data-target');
+        const input = document.getElementById(targetId);
+        if (!input) return;
+
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        button.textContent = isPassword ? 'Hide' : 'Show';
+        button.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+      });
+    </script>
   </body>
 </html>
