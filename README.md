@@ -121,6 +121,13 @@ npm run dev
 
 Open: `http://localhost:3000`
 
+## Deployment
+
+Use `DEPLOYMENT.md`.
+
+- Easiest path: **Railway quickstart** section
+- Alternative: VM + Nginx + PM2 full runbook
+
 ## 60-second demo flow
 
 1. Sign up (or log in with Google/GitHub).
