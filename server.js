@@ -18,6 +18,24 @@ app.use(methodOverride('_method'));
 
 app.use('/', todoRoutes);
 
+app.use((req, res) => {
+  res.status(404).render('index', {
+    title: 'Todo App',
+    todos: [],
+    openTodos: [],
+    completedTodos: [],
+    selectedEnergy: 'all',
+    focusMode: false,
+    search: '',
+    energyBudget: { high: 3, medium: 2, low: 1 },
+    counts: { total: 0, completed: 0, open: 0 },
+    focusMessage: '',
+    error: 'Page not found.',
+    success: '',
+    returnTo: '/'
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

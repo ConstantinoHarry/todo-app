@@ -21,20 +21,27 @@ async function getAllTodos(filters = {}) {
 async function createTodo(text, energyLevel) {
   const sql = 'INSERT INTO todos (text, energy_level) VALUES (?, ?)';
   const [result] = await pool.query(sql, [text, energyLevel]);
-
   return result.insertId;
 }
 
 async function toggleTodo(id) {
-  const sql = 'UPDATE todos SET completed = NOT completed WHERE id = ?';
+  const sql = 'UPDATE todos SET completed = NOT completed, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
   const [result] = await pool.query(sql, [id]);
+  return result.affectedRows;
+}
 
+async function updateTodo(id, text, energyLevel) {
+  const sql = `
+    UPDATE todos
+    SET text = ?, energy_level = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `;
+  const [result] = await pool.query(sql, [text, energyLevel, id]);
   return result.affectedRows;
 }
 
 async function deleteTodo(id) {
   const [result] = await pool.query('DELETE FROM todos WHERE id = ?', [id]);
-
   return result.affectedRows;
 }
 
@@ -46,10 +53,10 @@ async function clearCompletedTodos() {
 
     await connection.query(
       `
-        INSERT INTO completed_tasks (original_id, text, energy_level)
-        SELECT id, text, energy_level
-        FROM todos
-        WHERE completed = TRUE
+      INSERT INTO completed_tasks (original_id, text, energy_level)
+      SELECT id, text, energy_level
+      FROM todos
+      WHERE completed = TRUE
       `
     );
 
@@ -71,6 +78,7 @@ module.exports = {
   getAllTodos,
   createTodo,
   toggleTodo,
+  updateTodo,
   deleteTodo,
   clearCompletedTodos
 };
