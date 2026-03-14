@@ -32,6 +32,10 @@ Not every task requires the same mental effort. On busy or low-energy days, this
 - Focus mode filtering with per-energy task budget
 - Archive completed tasks via transaction-safe clear action
 - Basic validation and user-facing error feedback
+- CSRF protection for all mutating forms
+- Rate limiting on authentication routes
+- Secure headers via Helmet
+- Password reset flow with expiring token support
 
 ## Tech stack
 
@@ -112,6 +116,11 @@ DB_USER=root
 DB_PASSWORD=your_mysql_password
 DB_NAME=todo_app
 SESSION_SECRET=replace_with_a_long_random_secret
+APP_BASE_URL=http://localhost:3000
+RESET_PASSWORD_URL_BASE=http://localhost:3000
+RESET_TOKEN_TTL_MINUTES=60
+AUTH_RATE_LIMIT_WINDOW_MS=900000
+AUTH_RATE_LIMIT_MAX=10
 ```
 
 Also supported for Railway-style MySQL environments:
@@ -134,6 +143,8 @@ CREATE TABLE IF NOT EXISTS users (
    id INT PRIMARY KEY AUTO_INCREMENT,
    email VARCHAR(255) NOT NULL UNIQUE,
    password_hash VARCHAR(255) NOT NULL,
+   reset_password_token_hash VARCHAR(64) DEFAULT NULL,
+   reset_password_expires_at DATETIME DEFAULT NULL,
    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -161,6 +172,7 @@ CREATE TABLE IF NOT EXISTS completed_tasks (
 
 CREATE INDEX idx_todos_user_id ON todos(user_id);
 CREATE INDEX idx_completed_tasks_user_id ON completed_tasks(user_id);
+CREATE INDEX idx_users_reset_token_hash ON users(reset_password_token_hash);
 ```
 
 ## Railway deployment notes
@@ -178,6 +190,8 @@ CREATE INDEX idx_completed_tasks_user_id ON completed_tasks(user_id);
 - `.env` is ignored by git and must never be committed.
 - All SQL uses parameterized queries.
 - `clear-completed` uses a DB transaction to avoid partial archive/delete states.
+- Sessions are regenerated on login to reduce fixation risk.
+- Password reset links are single-use via hashed token + expiry.
 - Error handling is intentionally simple but user-friendly for a small project.
 
 ## Future improvements

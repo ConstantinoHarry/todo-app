@@ -93,6 +93,7 @@
               </div>
 
               <form class="todo-form" action="/todos" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
                 <input type="hidden" name="returnTo" value="<%= returnTo %>" />
 
                 <div class="form-field form-field-wide">
@@ -149,6 +150,7 @@
                     <li class="todo-item">
                       <div class="todo-main">
                         <form action="/todos/<%= todo.id %>/toggle?_method=PATCH" method="POST" class="inline-form">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
                           <input type="hidden" name="returnTo" value="<%= returnTo %>" />
                           <label class="checkbox-row todo-checkbox-label" for="todo-<%= todo.id %>">
                             <input
@@ -165,6 +167,7 @@
                         <details class="edit-panel">
                           <summary>Edit task</summary>
                           <form action="/todos/<%= todo.id %>?_method=PATCH" method="POST" class="edit-form">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
                             <input type="hidden" name="returnTo" value="<%= returnTo %>" />
 
                             <div class="form-field">
@@ -199,6 +202,7 @@
                         </span>
 
                         <form action="/todos/<%= todo.id %>?_method=DELETE" method="POST" class="inline-form">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
                           <input type="hidden" name="returnTo" value="<%= returnTo %>" />
                           <button type="submit" class="btn btn-ghost">Delete</button>
                         </form>
@@ -231,6 +235,7 @@
                     <li class="todo-item completed">
                       <div class="todo-main">
                         <form action="/todos/<%= todo.id %>/toggle?_method=PATCH" method="POST" class="inline-form">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
                           <input type="hidden" name="returnTo" value="<%= returnTo %>" />
                           <label class="checkbox-row todo-checkbox-label" for="completed-todo-<%= todo.id %>">
                             <input
@@ -251,6 +256,7 @@
                         </span>
 
                         <form action="/todos/<%= todo.id %>?_method=DELETE" method="POST" class="inline-form">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
                           <input type="hidden" name="returnTo" value="<%= returnTo %>" />
                           <button type="submit" class="btn btn-ghost">Delete</button>
                         </form>
@@ -333,6 +339,7 @@
 
               <div class="action-row">
                 <form action="/todos/clear-completed" method="POST" data-clear-completed-form>
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
                   <input type="hidden" name="returnTo" value="<%= returnTo %>" />
                   <button type="submit" class="btn btn-danger btn-block">Clear Completed</button>
                 </form>
