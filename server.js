@@ -55,10 +55,14 @@ const sessionStore = new MySQLStore({
   user: dbConfig.user,
   password: dbConfig.password,
   database: dbConfig.database,
-  createDatabaseTable: true,
+  createDatabaseTable: false,
   clearExpired: true,
   checkExpirationInterval: 15 * 60 * 1000,
   expiration: securityConfig.sessionMaxAgeMs
+});
+
+sessionStore.on('error', (error) => {
+  console.error('Session store error:', error && error.code ? error.code : error);
 });
 
 if (isProduction) {
@@ -224,5 +228,13 @@ async function startServer() {
     startReminderScheduler();
   });
 }
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception:', error);
+});
 
 startServer();

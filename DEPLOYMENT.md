@@ -16,8 +16,7 @@ In Railway app service settings:
 
 - **Build command**: `npm ci --omit=dev`
 - **Start command**: `npm start`
-
-Railway typically auto-detects Node, but explicitly setting the commands keeps deploys predictable.
+- **Root directory**: repo root
 
 ### C) Set environment variables
 
@@ -29,11 +28,7 @@ PORT=3000
 APP_BASE_URL=https://<your-railway-public-domain-or-custom-domain>
 TRUST_PROXY=1
 
-DB_HOST=<from-railway-mysql-host>
-DB_PORT=<from-railway-mysql-port>
-DB_USER=<from-railway-mysql-user>
-DB_PASSWORD=<from-railway-mysql-password>
-DB_NAME=<from-railway-mysql-database>
+DATABASE_URL=<from-railway-mysql-public-or-private-url>
 DB_SSL=false
 
 SESSION_SECRET=<long-random-secret>
@@ -42,6 +37,12 @@ SESSION_SAME_SITE=lax
 SESSION_COOKIE_DOMAIN=
 
 REMINDER_ENABLED=false
+```
+
+Optional fallback (only if your `DATABASE_URL` has no db name path):
+
+```dotenv
+DB_NAME=<railway_database_name>
 ```
 
 Generate a strong session secret locally:
@@ -55,19 +56,19 @@ Notes:
 - Leave `SESSION_COOKIE_DOMAIN` empty unless you use a custom domain and need explicit cookie scoping.
 - Keep `REMINDER_ENABLED=false` until SMTP is fully configured.
 
-### D) Apply database schema (`sql/init.sql`)
+### D) Database initialization
 
-Use Railway MySQL connection details to initialize schema once:
+No manual SQL step is required for base schema on normal startup.
 
-```bash
-mysql -h <DB_HOST> -P <DB_PORT> -u <DB_USER> -p<DB_PASSWORD> <DB_NAME> < sql/init.sql
-```
+- The app now performs idempotent schema bootstrap at startup (users, todos, subtasks, reminder logs, completed tasks, and sessions table).
+- If DB credentials are valid and DB user has create/alter permissions, schema is auto-created.
+- If schema bootstrap fails, app stays up but `/readyz` returns `503` with schema error details.
 
-If your password has special shell characters, run without inline password and enter it interactively:
+Minimal DB work in Railway:
 
-```bash
-mysql -h <DB_HOST> -P <DB_PORT> -u <DB_USER> -p <DB_NAME> < sql/init.sql
-```
+1. Add MySQL service in the same Railway project.
+2. Copy MySQL connection string into app `DATABASE_URL`.
+3. Deploy app service.
 
 ### E) Deploy and verify
 
@@ -76,6 +77,9 @@ mysql -h <DB_HOST> -P <DB_PORT> -u <DB_USER> -p <DB_NAME> < sql/init.sql
      - `/healthz` returns `200`
      - `/readyz` returns `200`
 3. Test register/login and create a todo.
+4. Test OAuth entry:
+    - `/auth/google` redirects to Google consent page
+    - `/auth/github` redirects to GitHub authorize page
 
 ### F) Optional production extras
 
@@ -93,6 +97,20 @@ For updates:
 2. Railway auto-redeploys.
 3. If schema changes, run SQL migration first, then deploy app.
 4. Re-check `/readyz` after deploy.
+
+### H) Crash triage checklist (Railway)
+
+If app crashes or restarts:
+
+1. Confirm `DATABASE_URL` and `SESSION_SECRET` are present.
+2. Confirm `APP_BASE_URL` matches deployed public URL exactly.
+3. Confirm OAuth callback URLs match exactly:
+    - `https://<domain>/auth/google/callback`
+    - `https://<domain>/auth/github/callback`
+4. Hit `/readyz` and inspect `schema.errorCode` or `schema.errorMessage`.
+5. If DB auth errors appear, rotate `DATABASE_URL` from Railway MySQL service and redeploy.
+6. If table errors appear, verify DB user has `CREATE`, `ALTER`, `INDEX` privileges.
+7. Keep `REMINDER_ENABLED=false` until login flow is verified.
 
 ## 1) Choose your production setup
 
@@ -355,8 +373,9 @@ At minimum, automate:
 - [ ] `TRUST_PROXY=1` behind Nginx/ingress
 - [ ] `SESSION_SECRET` set to random long string
 - [ ] `SESSION_SECURE_COOKIE=true`
-- [ ] Production DB credentials set
-- [ ] `sql/init.sql` applied in target DB
+- [ ] `DATABASE_URL` set from Railway MySQL service
+- [ ] DB user in `DATABASE_URL` has schema create/alter/index privileges
+- [ ] Railway app uses `npm ci --omit=dev` and `npm start`
 - [ ] OAuth callback URLs point to production domain
 - [ ] SMTP vars set (if reminders enabled)
 - [ ] PM2 running and persisted

@@ -142,6 +142,17 @@ async function ensureCoreSchema() {
     `
   );
 
+  await pool.query(
+    `
+    CREATE TABLE IF NOT EXISTS sessions (
+      session_id VARCHAR(128) COLLATE utf8mb4_bin NOT NULL,
+      expires INT(11) UNSIGNED NOT NULL,
+      data MEDIUMTEXT COLLATE utf8mb4_bin,
+      PRIMARY KEY (session_id)
+    ) ENGINE=InnoDB
+    `
+  );
+
   await ensureIndex('todos', 'idx_todos_user_id', 'user_id');
   await ensureIndex('subtasks', 'idx_subtasks_todo_id', 'todo_id');
   await ensureIndex('subtasks', 'idx_subtasks_user_id', 'user_id');

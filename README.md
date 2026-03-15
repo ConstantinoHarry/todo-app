@@ -145,6 +145,10 @@ PORT=3000
 NODE_ENV=development
 APP_BASE_URL=http://localhost:3000
 
+# Preferred on Railway / production:
+DATABASE_URL=mysql://user:password@host:3306/database
+
+# Local or fallback split vars:
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_USER=your_db_user
