@@ -1,6 +1,8 @@
 # Todo App
 
-A simple task manager built with Express, EJS, and MySQL. 
+A planning-focused task manager built with Express, EJS, and MySQL.
+
+This app is designed for real daily execution, not just storing todos. It helps you decide what to do now, what to move, and what to defer—using calendar scheduling, energy-based prioritization, carryover decisions, and daily reminder emails.
 
 This app was built to make day-to-day planning feel less overwhelming and more realistic. The current application that inspired this was Microsoft Planner which is the current planner I use to keep track of my tasks. So the goal for this app is to be an enhanced version with the intention of being more intuitive, given the calendar view to see how months are packed with tasks, start of day function so that tasks are managed properly given what is due on that day as well as the energy level feature so tasks can be classified to which required a higher energy level for completion. I am confident that this application I created is something that I will actually use. 
 
@@ -9,156 +11,84 @@ Instead of only storing tasks, it helps you decide *when* to do them (calendar v
 using carryover actions (do today, move tomorrow, or unschedule).
 The goal is to support better daily focus, clearer priorities, and fewer forgotten due items with the advent of a daily push notifications email reminder.
 
-It supports account login/signup, task planning, calendar view, carryover decisions, and due-date reminder notifications by email.
+- **When** a task should happen (calendar + due dates)
+- **How demanding** it is (energy levels: `high`, `medium`, `low`)
+- **What to do with unfinished work** (carryover actions)
 
-## What this app does
+## Core features
 
 - Create, edit, complete, and delete tasks
-- Add subtasks under each task
-- Set energy level (`high`, `medium`, `low`) and due date/time
-- Switch between list views (`Required`, `Completed`, `Calendar`)
-- Use **Carryover Review** each day to decide: do today, move tomorrow, or unschedule
-- Receive a daily reminder notification email for tasks due today (task name, description, and subtasks)
+- Add subtasks to break work into actionable steps
+- Assign due date/time and energy level to each task
+- Switch between `Required`, `Completed`, and `Calendar` views
+- Run daily **Carryover Review** (`Do Today`, `Move Tomorrow`, `Unschedule`)
+- Send one due-today reminder email per user per day
 
-## Feature walkthrough
+## How reminders work
 
-### 1) Task planning and tracking
+- A scheduler checks open tasks due today
+- Reminder emails include task title, due time, description, and subtasks
+- Sends are logged in `email_reminder_logs` to prevent duplicate reminders on the same date
 
-- Create tasks with name, optional description, energy level, due date/time, and subtasks.
-- Mark tasks complete from the main list or calendar agenda.
-- Edit tasks inline when priorities or deadlines change.
-- View progress in the overview card with filters like due today, due this week, or due this month.
+## Authentication
 
-### 2) Calendar view
+- Email/password signup and login
+- Optional OAuth with Google and GitHub
+- User data isolation per account
 
-- See all scheduled tasks in a monthly calendar.
-- Open any date to view that day’s agenda in a modal.
-- From the modal, you can add a task for that date, edit existing tasks, or mark tasks done.
+## Quick start (local)
 
-### 3) Carryover Review (custom feature)
-
-- At the start of the day, the app highlights overdue and due-today work.
-- For each task, you can make a quick decision:
-  - **Do Today**
-  - **Move Tomorrow**
-  - **Unschedule**
-- This helps keep the daily list realistic instead of letting overdue tasks pile up.
-
-### 4) Reminder notifications
-
-- A scheduler checks for open tasks due today.
-- Each user gets at most one reminder email per day.
-- Reminder email includes task title, due time, description, and subtasks.
-- Send logs prevent duplicate reminders on the same day.
-
-## Login and signup flow
-
-You can access the app in two ways:
-
-- Email + password registration/login
-- OAuth login with Google or GitHub
-
-After login, each user sees only their own tasks.
-
-## Reminder notifications (email)
-
-The app has a reminder scheduler.
-
-- It checks for open tasks due today
-- Sends one reminder email per user per day
-- Each email includes:
-  - task title
-  - task description
-  - subtasks with completion status
-
-Reminder logging is stored in the database so the same user does not get duplicate reminders on the same day.
-
-## Database schema
-
-Main tables:
-
-- `users`: account information (email/password and optional OAuth IDs)
-- `todos`: core tasks for each user (text, description, status, energy level, deadline)
-- `subtasks`: checklist items attached to a task
-- `completed_tasks`: archived completed tasks
-- `email_reminder_logs`: tracks daily reminder sends per user
-
-Relationships:
-
-- One user has many todos
-- One todo has many subtasks
-- Deleting a user deletes their tasks and related records (cascade)
-
-Schema is managed by `sql/init.sql`.
-
-## Quick start
-
-1. Install dependencies
+1. Install dependencies:
 
 ```bash
 npm install
 ```
 
-2. Copy environment template
+2. Create environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-3. Fill `.env` with database and auth settings
+3. Set database/app values in `.env`.
 
-4. Initialize database schema
+4. Initialize schema:
 
 ```bash
 mysql -h 127.0.0.1 -P 3306 -u <user> -p <database> < sql/init.sql
 ```
 
-5. Start server
+5. Start app:
 
 ```bash
 npm run dev
 ```
 
-Open: `http://localhost:3000`
+Open `http://localhost:3000`.
 
-## Deployment
+## Environment variables
 
-Use `DEPLOYMENT.md`.
-
-- Easiest path: **Railway quickstart** section
-- Alternative: VM + Nginx + PM2 full runbook
-
-## 60-second demo flow
-
-1. Sign up (or log in with Google/GitHub).
-2. Create 2–3 tasks with due dates and subtasks.
-3. Open Calendar and click a date to manage tasks in the agenda modal.
-4. Use Carryover Review to move one task to tomorrow and unschedule another.
-5. Trigger/verify reminder email for due-today tasks.
-
-## Required environment variables
-
-Core app:
+Minimum required:
 
 ```env
 PORT=3000
 NODE_ENV=development
 APP_BASE_URL=http://localhost:3000
 
-# Preferred on Railway / production:
+# Prefer this in production/Railway
 DATABASE_URL=mysql://user:password@host:3306/database
 
-# Local or fallback split vars:
+# Local fallback vars
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_USER=your_db_user
 DB_PASSWORD=your_db_password
 DB_NAME=your_db_name
 
-SESSION_SECRET=your_long_random_session_secret
+SESSION_SECRET=your_long_random_secret
 ```
 
-OAuth (optional):
+Optional OAuth:
 
 ```env
 GOOGLE_CLIENT_ID=
@@ -170,7 +100,7 @@ GITHUB_CLIENT_SECRET=
 GITHUB_CALLBACK_URL=http://localhost:3000/auth/github/callback
 ```
 
-Reminder notifications (optional):
+Optional reminders:
 
 ```env
 REMINDER_ENABLED=true
@@ -184,23 +114,30 @@ SMTP_PASS=your_app_password
 SMTP_FROM=Todo App <your_email@gmail.com>
 ```
 
-For Gmail, `SMTP_PASS` should be a **Google App Password**.
+For Gmail, use a Google App Password for `SMTP_PASS`.
 
-## Project structure (high level)
+## Deployment
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for full production steps.
+
+- Recommended: Railway quickstart
+- Alternative: VM + Nginx + PM2 runbook
+
+## Project structure
 
 ```text
-config/       app configuration (env, DB, passport)
-controllers/  request handlers
-models/       database queries
-routes/       route mapping
-services/     reminder scheduler / email service
-views/        EJS templates
-public/       CSS and JS assets
-sql/          schema initialization
+config/       environment, DB, auth config
+controllers/  route handlers
+models/       SQL query layer
+routes/       route definitions
+services/     reminders and schema bootstrap
+views/        EJS UI templates
+public/       static assets (CSS/JS/images)
+sql/          schema scripts
 ```
 
-## Notes
+## Operational notes
 
-- `.env` is ignored by git and should never be committed.
-- Security middleware includes CSRF protection, Helmet headers, sessions, and rate limiting.
-- Health endpoints are available at `/healthz` and `/readyz`.
+- `.env` is git-ignored and should never be committed
+- Security includes CSRF, Helmet, session protection, and rate limiting
+- Health endpoints: `/healthz` and `/readyz`
