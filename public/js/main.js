@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const editTaskCloseButtons = document.querySelectorAll('[data-close-edit-task-modal]');
   const editTaskForm = document.querySelector('[data-edit-task-form]');
   const editTaskTextInput = document.querySelector('[data-edit-task-text]');
+  const editTaskDescriptionInput = document.querySelector('[data-edit-task-description]');
   const editTaskEnergyInput = document.querySelector('[data-edit-task-energy]');
   const editTaskDeadlineInput = document.querySelector('[data-edit-task-deadline]');
   const editSubtaskForm = document.querySelector('[data-edit-subtask-form]');
@@ -161,6 +162,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (editTaskTextInput) {
       editTaskTextInput.value = todo.dataset.todoText || '';
+    }
+
+    if (editTaskDescriptionInput) {
+      editTaskDescriptionInput.value = todo.dataset.todoDescription || '';
     }
 
     if (editTaskEnergyInput) {
