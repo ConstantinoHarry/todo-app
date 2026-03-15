@@ -719,10 +719,74 @@
               <h3 id="calendarAgendaTitle"><%= calendarAgenda.label %></h3>
               <p class="todo-meta">Showing <strong><%= calendarAgenda.tasks.length %></strong> task(s) for this date.</p>
             </div>
-            <a href="<%= buildViewPath('calendar', selectedCalendarMonth) %>" class="btn btn-ghost calendar-agenda-clear-btn" data-calendar-agenda-close>Close</a>
+            <div class="calendar-agenda-actions">
+              <button type="button" class="btn btn-secondary" data-open-calendar-add-panel>Add task for this date</button>
+              <a href="<%= buildViewPath('calendar', selectedCalendarMonth) %>" class="btn btn-ghost calendar-agenda-clear-btn" data-calendar-agenda-close>Close</a>
+            </div>
           </div>
 
-          <details class="calendar-agenda-add-panel" open>
+          <% if (!calendarAgenda.tasks.length) { %>
+            <div class="empty-state-card calendar-empty-state">
+              <p class="empty-state-title">No tasks scheduled for this day.</p>
+              <p class="empty-state">Pick another date or add a deadline to a task.</p>
+            </div>
+          <% } else { %>
+            <ul class="calendar-agenda-list">
+              <% calendarAgenda.tasks.forEach(function(todo) { %>
+                <li class="calendar-agenda-item <%= todo.completed ? 'is-completed' : '' %>">
+                  <div
+                    class="calendar-agenda-main todo-main-edit-trigger"
+                    data-open-edit-task-modal="true"
+                    data-todo-id="<%= todo.id %>"
+                    data-todo-text="<%= todo.text %>"
+                    data-todo-description="<%= todo.description || '' %>"
+                    data-todo-energy="<%= todo.energy_level %>"
+                    data-todo-deadline="<%= toDatetimeLocal(todo.deadline) %>"
+                    tabindex="0"
+                  >
+                    <div class="calendar-agenda-topline">
+                      <h4 class="calendar-agenda-title"><%= todo.text %></h4>
+                      <span class="badge badge-<%= todo.energy_level %>">
+                        <%= todo.energy_level === 'high' ? '⚡ High Energy' : todo.energy_level === 'medium' ? '😊 Medium Energy' : '😴 Low Energy' %>
+                      </span>
+                    </div>
+
+                    <% if (todo.description) { %>
+                      <p class="calendar-agenda-description"><%= todo.description %></p>
+                    <% } %>
+
+                    <div class="calendar-agenda-meta-row">
+                      <% if (todo.deadline) { %>
+                        <span class="deadline-badge <%= !todo.completed && new Date(todo.deadline) < new Date() ? 'is-overdue' : '' %>">
+                          <%= !todo.completed && new Date(todo.deadline) < new Date() ? '⚠ Overdue' : '📅 Due' %> · <%= fmtDeadline(todo.deadline) %>
+                        </span>
+                      <% } %>
+
+                      <% if ((todo.subtasks || []).length > 0) { %>
+                        <span class="subtask-count"><%= (todo.subtasks || []).filter(function(s){ return s.completed; }).length %>/<%= (todo.subtasks || []).length %> subtasks done</span>
+                      <% } %>
+                    </div>
+                  </div>
+
+                  <div class="calendar-agenda-actions">
+                    <form action="/todos/<%= todo.id %>/toggle?_method=PATCH" method="POST" class="inline-form">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                      <input type="hidden" name="returnTo" value="<%= returnTo %>" />
+                      <button type="submit" class="btn btn-ghost"><%= todo.completed ? 'Reopen' : 'Mark done' %></button>
+                    </form>
+
+                    <form action="/todos/<%= todo.id %>?_method=DELETE" method="POST" class="inline-form">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                      <input type="hidden" name="returnTo" value="<%= returnTo %>" />
+                      <button type="submit" class="btn btn-ghost">Delete</button>
+                    </form>
+                  </div>
+                </li>
+              <% }); %>
+            </ul>
+          <% } %>
+
+          <details class="calendar-agenda-add-panel" data-calendar-add-panel>
             <summary>Add task for this date</summary>
             <form action="/todos" method="POST" class="calendar-agenda-add-form" data-calendar-add-task-form>
               <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
@@ -806,67 +870,6 @@
               <button type="submit" class="btn btn-secondary calendar-agenda-add-btn">Add Task</button>
             </form>
           </details>
-
-          <% if (!calendarAgenda.tasks.length) { %>
-            <div class="empty-state-card calendar-empty-state">
-              <p class="empty-state-title">No tasks scheduled for this day.</p>
-              <p class="empty-state">Pick another date or add a deadline to a task.</p>
-            </div>
-          <% } else { %>
-            <ul class="calendar-agenda-list">
-              <% calendarAgenda.tasks.forEach(function(todo) { %>
-                <li class="calendar-agenda-item <%= todo.completed ? 'is-completed' : '' %>">
-                  <div
-                    class="calendar-agenda-main todo-main-edit-trigger"
-                    data-open-edit-task-modal="true"
-                    data-todo-id="<%= todo.id %>"
-                    data-todo-text="<%= todo.text %>"
-                    data-todo-description="<%= todo.description || '' %>"
-                    data-todo-energy="<%= todo.energy_level %>"
-                    data-todo-deadline="<%= toDatetimeLocal(todo.deadline) %>"
-                    tabindex="0"
-                  >
-                    <div class="calendar-agenda-topline">
-                      <h4 class="calendar-agenda-title"><%= todo.text %></h4>
-                      <span class="badge badge-<%= todo.energy_level %>">
-                        <%= todo.energy_level === 'high' ? '⚡ High Energy' : todo.energy_level === 'medium' ? '😊 Medium Energy' : '😴 Low Energy' %>
-                      </span>
-                    </div>
-
-                    <% if (todo.description) { %>
-                      <p class="calendar-agenda-description"><%= todo.description %></p>
-                    <% } %>
-
-                    <div class="calendar-agenda-meta-row">
-                      <% if (todo.deadline) { %>
-                        <span class="deadline-badge <%= !todo.completed && new Date(todo.deadline) < new Date() ? 'is-overdue' : '' %>">
-                          <%= !todo.completed && new Date(todo.deadline) < new Date() ? '⚠ Overdue' : '📅 Due' %> · <%= fmtDeadline(todo.deadline) %>
-                        </span>
-                      <% } %>
-
-                      <% if ((todo.subtasks || []).length > 0) { %>
-                        <span class="subtask-count"><%= (todo.subtasks || []).filter(function(s){ return s.completed; }).length %>/<%= (todo.subtasks || []).length %> subtasks done</span>
-                      <% } %>
-                    </div>
-                  </div>
-
-                  <div class="calendar-agenda-actions">
-                    <form action="/todos/<%= todo.id %>/toggle?_method=PATCH" method="POST" class="inline-form">
-                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                      <input type="hidden" name="returnTo" value="<%= returnTo %>" />
-                      <button type="submit" class="btn btn-ghost"><%= todo.completed ? 'Reopen' : 'Mark done' %></button>
-                    </form>
-
-                    <form action="/todos/<%= todo.id %>?_method=DELETE" method="POST" class="inline-form">
-                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                      <input type="hidden" name="returnTo" value="<%= returnTo %>" />
-                      <button type="submit" class="btn btn-ghost">Delete</button>
-                    </form>
-                  </div>
-                </li>
-              <% }); %>
-            </ul>
-          <% } %>
         </div>
       </div>
     <% } %>

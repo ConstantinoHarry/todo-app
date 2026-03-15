@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const focusModeStorageKey = 'todo-focus-mode-enabled';
   const calendarAgendaModal = document.querySelector('[data-calendar-agenda-modal]');
   const calendarAgendaCloseButton = document.querySelector('[data-calendar-agenda-close]');
+  const calendarAddPanel = document.querySelector('[data-calendar-add-panel]');
+  const calendarAddPanelOpenButton = document.querySelector('[data-open-calendar-add-panel]');
   const editTaskModal = document.querySelector('[data-edit-task-modal]');
   const editTaskCloseButtons = document.querySelectorAll('[data-close-edit-task-modal]');
   const editTaskForm = document.querySelector('[data-edit-task-form]');
@@ -321,6 +323,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (event.target === calendarAgendaModal) {
         closeCalendarAgendaModal();
       }
+    });
+  }
+
+  if (calendarAddPanelOpenButton && calendarAddPanel) {
+    calendarAddPanelOpenButton.addEventListener('click', () => {
+      calendarAddPanel.open = true;
+      calendarAddPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   }
 
