@@ -14,6 +14,7 @@ const todoRoutes = require('./routes/todos');
 const { requireAuth } = require('./middleware/auth');
 const configurePassport = require('./config/passport');
 const { startReminderScheduler } = require('./services/reminderService');
+const { initializeSchema, getSchemaStatus } = require('./services/schemaService');
 const pool = require('./config/db');
 const {
   getAppConfig,
@@ -89,6 +90,15 @@ app.get('/healthz', (req, res) => {
 app.get('/readyz', async (req, res) => {
   try {
     await pool.query('SELECT 1');
+
+    const schemaStatus = getSchemaStatus();
+    if (!schemaStatus.ready) {
+      return res.status(503).json({
+        status: 'not-ready',
+        schema: schemaStatus
+      });
+    }
+
     return res.status(200).json({ status: 'ready' });
   } catch (error) {
     return res.status(503).json({ status: 'not-ready' });
@@ -129,12 +139,40 @@ app.use('/', authRoutes);
 app.use('/', requireAuth, todoRoutes);
 
 app.use((error, req, res, next) => {
+  if (res.headersSent) {
+    return next(error);
+  }
+
   if (error && error.code === 'EBADCSRFTOKEN') {
     const fallbackPath = req.session && req.session.user ? '/' : '/login';
     const queryChar = fallbackPath.includes('?') ? '&' : '?';
     return res.redirect(
       `${fallbackPath}${queryChar}error=${encodeURIComponent('Your session expired. Please try again.')}`
     );
+  }
+
+  const databaseErrorCodes = new Set([
+    'ER_ACCESS_DENIED_ERROR',
+    'ER_BAD_DB_ERROR',
+    'ER_NO_SUCH_TABLE',
+    'ECONNREFUSED',
+    'PROTOCOL_CONNECTION_LOST'
+  ]);
+
+  if (error && databaseErrorCodes.has(error.code)) {
+    console.error('Database/session error:', error.code);
+
+    if (req.path === '/readyz') {
+      return res.status(503).json({ status: 'not-ready', error: error.code });
+    }
+
+    if (req.accepts('json')) {
+      return res.status(503).json({
+        error: 'Service temporarily unavailable. Please retry shortly.'
+      });
+    }
+
+    return res.status(503).send('Service temporarily unavailable. Please retry shortly.');
   }
 
   return next(error);
@@ -173,7 +211,18 @@ app.use((req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on ${appConfig.appBaseUrl}`);
-  startReminderScheduler();
-});
+async function startServer() {
+  const schemaReady = await initializeSchema();
+
+  if (!schemaReady) {
+    const schemaStatus = getSchemaStatus();
+    console.error('Database schema initialization failed:', schemaStatus.errorCode || schemaStatus.errorMessage);
+  }
+
+  app.listen(PORT, () => {
+    console.log(`Server running on ${appConfig.appBaseUrl}`);
+    startReminderScheduler();
+  });
+}
+
+startServer();

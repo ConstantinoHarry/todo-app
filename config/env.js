@@ -26,7 +26,8 @@ function parseDbUrl(rawUrl) {
   }
 
   try {
-    const parsed = new URL(rawUrl);
+    const normalizedUrl = rawUrl.trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '');
+    const parsed = new URL(normalizedUrl);
     if (!parsed.protocol.startsWith('mysql')) {
       return null;
     }
@@ -89,12 +90,14 @@ function getDbConfig() {
   const useSsl = parseBoolean(process.env.DB_SSL, false);
 
   if (urlConfig) {
+    const fallbackDatabase = process.env.DB_NAME || process.env.MYSQLDATABASE || '';
+
     return {
       host: urlConfig.host,
       port: urlConfig.port,
       user: urlConfig.user,
       password: urlConfig.password,
-      database: urlConfig.database,
+      database: urlConfig.database || fallbackDatabase,
       ssl: useSsl ? { rejectUnauthorized: parseBoolean(process.env.DB_SSL_REJECT_UNAUTHORIZED, true) } : undefined
     };
   }
@@ -166,6 +169,11 @@ function validateProductionEnv() {
   );
 
   if (hasDbUrl) {
+    const dbConfig = getDbConfig();
+    if (!dbConfig.database) {
+      throw new Error('Missing DB name in DATABASE_URL (or DB_NAME fallback).');
+    }
+
     return;
   }
 

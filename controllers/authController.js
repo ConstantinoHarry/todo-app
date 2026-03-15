@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const passport = require('passport');
+const { isSchemaReady } = require('../services/schemaService');
 const {
   findUserByEmail,
   createUser
@@ -71,7 +72,15 @@ function isGithubConfigured() {
   return Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
 }
 
+function getSchemaNotReadyMessage() {
+  return 'Login is temporarily unavailable while database setup completes. Please try again shortly.';
+}
+
 function startGoogleAuth(req, res, next) {
+  if (!isSchemaReady()) {
+    return res.redirect('/login?error=' + encodeURIComponent(getSchemaNotReadyMessage()));
+  }
+
   if (!isGoogleConfigured()) {
     return res.redirect(
       '/login?error=' +
@@ -86,6 +95,10 @@ function startGoogleAuth(req, res, next) {
 }
 
 function startGithubAuth(req, res, next) {
+  if (!isSchemaReady()) {
+    return res.redirect('/login?error=' + encodeURIComponent(getSchemaNotReadyMessage()));
+  }
+
   if (!isGithubConfigured()) {
     return res.redirect(
       '/login?error=' +
@@ -100,6 +113,10 @@ function startGithubAuth(req, res, next) {
 
 function handleSocialAuthCallback(strategyName, providerLabel) {
   return (req, res, next) => {
+    if (!isSchemaReady()) {
+      return res.redirect('/login?error=' + encodeURIComponent(getSchemaNotReadyMessage()));
+    }
+
     passport.authenticate(strategyName, async (error, user) => {
       if (error || !user) {
         console.error(`${providerLabel} login failed:`, error || 'No user returned');
@@ -129,6 +146,10 @@ const googleAuthCallback = handleSocialAuthCallback('google', 'Google');
 const githubAuthCallback = handleSocialAuthCallback('github', 'GitHub');
 
 async function register(req, res) {
+  if (!isSchemaReady()) {
+    return res.redirect('/register?error=' + encodeURIComponent(getSchemaNotReadyMessage()));
+  }
+
   const email = normalizeEmail(req.body.email);
   const password = typeof req.body.password === 'string' ? req.body.password : '';
   const confirmPassword = typeof req.body.confirmPassword === 'string' ? req.body.confirmPassword : '';
@@ -167,6 +188,10 @@ async function register(req, res) {
 }
 
 async function login(req, res) {
+  if (!isSchemaReady()) {
+    return res.redirect('/login?error=' + encodeURIComponent(getSchemaNotReadyMessage()));
+  }
+
   const email = normalizeEmail(req.body.email);
   const password = typeof req.body.password === 'string' ? req.body.password : '';
 
