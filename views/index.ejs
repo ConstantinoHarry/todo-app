@@ -724,11 +724,11 @@
 
           <details class="calendar-agenda-add-panel" open>
             <summary>Add task for this date</summary>
-            <form action="/todos" method="POST" class="calendar-agenda-add-form">
+            <form action="/todos" method="POST" class="calendar-agenda-add-form" data-calendar-add-task-form>
               <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
               <input type="hidden" name="returnTo" value="<%= returnTo %>" />
-              <input type="hidden" name="description" value="" />
-              <input type="hidden" name="subtasksJson" value="[]" />
+              <input type="hidden" name="deadline" value="" data-calendar-deadline-hidden />
+              <input type="hidden" name="subtasksJson" value="[]" data-calendar-subtasks-json />
 
               <div class="calendar-agenda-add-grid">
                 <div class="form-field">
@@ -744,6 +744,17 @@
                 </div>
 
                 <div class="form-field">
+                  <label for="calendarAddTaskDescription">Description <span class="field-optional">(optional)</span></label>
+                  <textarea
+                    id="calendarAddTaskDescription"
+                    name="description"
+                    rows="3"
+                    maxlength="1000"
+                    placeholder="Add context, notes, or acceptance criteria..."
+                  ></textarea>
+                </div>
+
+                <div class="form-field">
                   <label for="calendarAddTaskEnergy">Energy level</label>
                   <select id="calendarAddTaskEnergy" name="energyLevel">
                     <option value="high">⚡ High Energy</option>
@@ -753,13 +764,42 @@
                 </div>
 
                 <div class="form-field">
-                  <label for="calendarAddTaskDeadline">Due date & time</label>
+                  <label for="calendarAddTaskDate">Due date <span class="field-optional">(optional)</span></label>
                   <input
-                    id="calendarAddTaskDeadline"
-                    type="datetime-local"
-                    name="deadline"
-                    value="<%= selectedAgendaDefaultDeadline %>"
+                    id="calendarAddTaskDate"
+                    type="date"
+                    data-calendar-task-date
+                    value="<%= selectedCalendarDate || '' %>"
                   />
+                </div>
+
+                <div class="form-field">
+                  <label for="calendarAddTaskTime">Due time <span class="field-optional">(optional)</span></label>
+                  <input
+                    id="calendarAddTaskTime"
+                    type="time"
+                    data-calendar-task-time
+                    value="09:00"
+                  />
+                </div>
+              </div>
+
+              <div class="form-field task-subtasks-field">
+                <div class="task-subtasks-header">
+                  <label>Subtasks <span class="field-optional">(optional)</span></label>
+                  <button type="button" class="btn btn-ghost" data-calendar-add-subtask-row>Add subtask</button>
+                </div>
+
+                <div class="task-subtask-list" data-calendar-subtask-list>
+                  <div class="task-subtask-row">
+                    <input
+                      type="text"
+                      maxlength="255"
+                      placeholder="e.g. Draft outline"
+                      data-calendar-subtask-input
+                    />
+                    <button type="button" class="subtask-delete-btn" aria-label="Remove subtask" data-calendar-remove-subtask>&times;</button>
+                  </div>
                 </div>
               </div>
 

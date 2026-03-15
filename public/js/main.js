@@ -25,6 +25,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const editTaskDeadlineInput = document.querySelector('[data-edit-task-deadline]');
   const editSubtaskForm = document.querySelector('[data-edit-subtask-form]');
   const editSubtaskInput = document.querySelector('[data-edit-subtask-input]');
+  const calendarAddTaskForm = document.querySelector('[data-calendar-add-task-form]');
+  const calendarSubtaskList = document.querySelector('[data-calendar-subtask-list]');
+  const calendarAddSubtaskRowButton = document.querySelector('[data-calendar-add-subtask-row]');
+  const calendarSubtasksJsonInput = document.querySelector('[data-calendar-subtasks-json]');
+  const calendarDeadlineHiddenInput = document.querySelector('[data-calendar-deadline-hidden]');
+  const calendarTaskDateInput = document.querySelector('[data-calendar-task-date]');
+  const calendarTaskTimeInput = document.querySelector('[data-calendar-task-time]');
 
   function closeCalendarAgendaModal() {
     if (!calendarAgendaCloseButton || !calendarAgendaCloseButton.href) {
@@ -100,6 +107,29 @@ document.addEventListener('DOMContentLoaded', () => {
     removeButton.className = 'subtask-delete-btn';
     removeButton.setAttribute('aria-label', 'Remove subtask');
     removeButton.setAttribute('data-remove-subtask', '');
+    removeButton.innerHTML = '&times;';
+
+    row.appendChild(input);
+    row.appendChild(removeButton);
+    return row;
+  }
+
+  function createCalendarSubtaskRow(value = '') {
+    const row = document.createElement('div');
+    row.className = 'task-subtask-row';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.maxLength = 255;
+    input.placeholder = 'e.g. Draft outline';
+    input.setAttribute('data-calendar-subtask-input', '');
+    input.value = value;
+
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'subtask-delete-btn';
+    removeButton.setAttribute('aria-label', 'Remove subtask');
+    removeButton.setAttribute('data-calendar-remove-subtask', '');
     removeButton.innerHTML = '&times;';
 
     row.appendChild(input);
@@ -198,6 +228,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const subtasks = [];
     const inputs = subtaskList.querySelectorAll('[data-subtask-input]');
+
+    inputs.forEach((input) => {
+      const value = typeof input.value === 'string' ? input.value.trim() : '';
+      if (value) {
+        subtasks.push(value);
+      }
+    });
+
+    return subtasks;
+  }
+
+  function collectCalendarSubtasks() {
+    if (!calendarSubtaskList) {
+      return [];
+    }
+
+    const subtasks = [];
+    const inputs = calendarSubtaskList.querySelectorAll('[data-calendar-subtask-input]');
 
     inputs.forEach((input) => {
       const value = typeof input.value === 'string' ? input.value.trim() : '';
@@ -396,4 +444,64 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   resetAddTaskForm({ resetNativeForm: false });
+
+  if (calendarAddSubtaskRowButton && calendarSubtaskList) {
+    calendarAddSubtaskRowButton.addEventListener('click', () => {
+      const inputs = calendarSubtaskList.querySelectorAll('[data-calendar-subtask-input]');
+      if (inputs.length >= 20) {
+        return;
+      }
+
+      calendarSubtaskList.appendChild(createCalendarSubtaskRow());
+      const latestInput = calendarSubtaskList.lastElementChild && calendarSubtaskList.lastElementChild.querySelector('[data-calendar-subtask-input]');
+      if (latestInput) {
+        latestInput.focus();
+      }
+    });
+
+    calendarSubtaskList.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const removeButton = target.closest('[data-calendar-remove-subtask]');
+      if (!removeButton) {
+        return;
+      }
+
+      const row = removeButton.closest('.task-subtask-row');
+      if (!row) {
+        return;
+      }
+
+      const rows = calendarSubtaskList.querySelectorAll('.task-subtask-row');
+      if (rows.length <= 1) {
+        const input = row.querySelector('[data-calendar-subtask-input]');
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+        return;
+      }
+
+      row.remove();
+    });
+  }
+
+  if (calendarAddTaskForm) {
+    calendarAddTaskForm.addEventListener('submit', () => {
+      if (calendarDeadlineHiddenInput && calendarTaskDateInput) {
+        const datePart = typeof calendarTaskDateInput.value === 'string' ? calendarTaskDateInput.value : '';
+        const timePart = calendarTaskTimeInput && typeof calendarTaskTimeInput.value === 'string' && calendarTaskTimeInput.value
+          ? calendarTaskTimeInput.value
+          : '09:00';
+        calendarDeadlineHiddenInput.value = datePart ? `${datePart}T${timePart}` : '';
+      }
+
+      if (calendarSubtasksJsonInput) {
+        calendarSubtasksJsonInput.value = JSON.stringify(collectCalendarSubtasks());
+      }
+    });
+  }
 });
