@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const calendarAgendaCloseButton = document.querySelector('[data-calendar-agenda-close]');
   const calendarAddPanel = document.querySelector('[data-calendar-add-panel]');
   const calendarAddPanelOpenButton = document.querySelector('[data-open-calendar-add-panel]');
+  const calendarAddPanelCloseButton = document.querySelector('[data-close-calendar-add-panel]');
   const editTaskModal = document.querySelector('[data-edit-task-modal]');
   const editTaskCloseButtons = document.querySelectorAll('[data-close-edit-task-modal]');
   const editTaskForm = document.querySelector('[data-edit-task-form]');
@@ -330,6 +331,15 @@ document.addEventListener('DOMContentLoaded', () => {
     calendarAddPanelOpenButton.addEventListener('click', () => {
       calendarAddPanel.open = true;
       calendarAddPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  if (calendarAddPanelCloseButton && calendarAddPanel) {
+    calendarAddPanelCloseButton.addEventListener('click', () => {
+      calendarAddPanel.open = false;
+      if (calendarAddPanelOpenButton) {
+        calendarAddPanelOpenButton.focus();
+      }
     });
   }
 
