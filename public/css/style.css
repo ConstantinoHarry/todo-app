@@ -1703,12 +1703,42 @@ body.modal-open {
   background: rgba(255, 255, 255, 0.72);
 }
 
+.calendar-agenda-add-panel {
+  overflow: hidden;
+}
+
+.calendar-agenda-add-panel[open] {
+  border-style: solid;
+  border-color: rgba(147, 197, 253, 0.8);
+  background: linear-gradient(180deg, rgba(248, 252, 255, 0.96) 0%, rgba(255, 255, 255, 0.96) 100%);
+}
+
 .calendar-agenda-add-panel summary,
 .calendar-agenda-edit-panel summary {
   cursor: pointer;
   font-weight: 800;
   color: var(--primary);
   list-style: none;
+}
+
+.calendar-agenda-add-panel summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.calendar-agenda-add-panel summary::after {
+  content: 'Expand';
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-soft);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.calendar-agenda-add-panel[open] summary::after {
+  content: 'Open';
 }
 
 .calendar-agenda-add-panel summary::-webkit-details-marker,
@@ -1725,12 +1755,34 @@ body.modal-open {
 
 .calendar-agenda-add-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.calendar-add-field-text,
+.calendar-add-field-description {
+  grid-column: 1 / -1;
+}
+
+.calendar-add-field-description textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.calendar-agenda-add-form .task-subtasks-field {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  background: #fff;
+}
+
+.calendar-agenda-add-form .task-subtask-list {
+  margin-top: 8px;
 }
 
 .calendar-agenda-add-btn {
   justify-self: flex-start;
+  min-height: 42px;
 }
 
 .calendar-agenda-list {
