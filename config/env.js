@@ -20,6 +20,29 @@ function parseNumber(value, defaultValue) {
   return Number.isFinite(parsed) ? parsed : defaultValue;
 }
 
+function parseDbUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(rawUrl);
+    if (!parsed.protocol.startsWith('mysql')) {
+      return null;
+    }
+
+    return {
+      host: parsed.hostname,
+      port: parseNumber(parsed.port, 3306),
+      user: decodeURIComponent(parsed.username || ''),
+      password: decodeURIComponent(parsed.password || ''),
+      database: decodeURIComponent((parsed.pathname || '').replace(/^\//, ''))
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
 function getRequiredEnv(name) {
   const value = process.env[name];
   if (!value || !value.trim()) {
@@ -57,7 +80,24 @@ function getAppConfig() {
 }
 
 function getDbConfig() {
+  const urlConfig =
+    parseDbUrl(process.env.DATABASE_URL) ||
+    parseDbUrl(process.env.MYSQL_PUBLIC_URL) ||
+    parseDbUrl(process.env.DATABASE_PUBLIC_URL) ||
+    parseDbUrl(process.env.MYSQL_URL);
+
   const useSsl = parseBoolean(process.env.DB_SSL, false);
+
+  if (urlConfig) {
+    return {
+      host: urlConfig.host,
+      port: urlConfig.port,
+      user: urlConfig.user,
+      password: urlConfig.password,
+      database: urlConfig.database,
+      ssl: useSsl ? { rejectUnauthorized: parseBoolean(process.env.DB_SSL_REJECT_UNAUTHORIZED, true) } : undefined
+    };
+  }
 
   return {
     host: process.env.DB_HOST || process.env.MYSQLHOST || 'localhost',
@@ -117,6 +157,17 @@ function validateProductionEnv() {
   }
 
   getRequiredEnv('SESSION_SECRET');
+
+  const hasDbUrl = Boolean(
+    parseDbUrl(process.env.DATABASE_URL) ||
+      parseDbUrl(process.env.MYSQL_PUBLIC_URL) ||
+      parseDbUrl(process.env.DATABASE_PUBLIC_URL) ||
+      parseDbUrl(process.env.MYSQL_URL)
+  );
+
+  if (hasDbUrl) {
+    return;
+  }
 
   if (!process.env.DB_HOST && !process.env.MYSQLHOST) {
     throw new Error('Missing DB host. Set DB_HOST or MYSQLHOST for production.');
