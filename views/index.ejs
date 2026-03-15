@@ -797,47 +797,6 @@
                       <p class="calendar-agenda-description"><%= todo.description %></p>
                     <% } %>
 
-                    <details class="calendar-agenda-edit-panel">
-                      <summary>Edit task</summary>
-                      <form action="/todos/<%= todo.id %>?_method=PATCH" method="POST" class="calendar-agenda-edit-form">
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                        <input type="hidden" name="returnTo" value="<%= returnTo %>" />
-
-                        <div class="form-field">
-                          <label for="calendar-edit-text-<%= todo.id %>">Task name</label>
-                          <input
-                            id="calendar-edit-text-<%= todo.id %>"
-                            type="text"
-                            name="text"
-                            value="<%= todo.text %>"
-                            maxlength="255"
-                            required
-                          />
-                        </div>
-
-                        <div class="form-field">
-                          <label for="calendar-edit-energy-<%= todo.id %>">Energy level</label>
-                          <select id="calendar-edit-energy-<%= todo.id %>" name="energyLevel">
-                            <option value="high" <%= todo.energy_level === 'high' ? 'selected' : '' %>>⚡ High Energy</option>
-                            <option value="medium" <%= todo.energy_level === 'medium' ? 'selected' : '' %>>😊 Medium Energy</option>
-                            <option value="low" <%= todo.energy_level === 'low' ? 'selected' : '' %>>😴 Low Energy</option>
-                          </select>
-                        </div>
-
-                        <div class="form-field">
-                          <label for="calendar-edit-deadline-<%= todo.id %>">Due date & time</label>
-                          <input
-                            id="calendar-edit-deadline-<%= todo.id %>"
-                            type="datetime-local"
-                            name="deadline"
-                            value="<%= toDatetimeLocal(todo.deadline) %>"
-                          />
-                        </div>
-
-                        <button type="submit" class="btn btn-secondary">Save</button>
-                      </form>
-                    </details>
-
                     <div class="calendar-agenda-meta-row">
                       <% if (todo.deadline) { %>
                         <span class="deadline-badge <%= !todo.completed && new Date(todo.deadline) < new Date() ? 'is-overdue' : '' %>">
