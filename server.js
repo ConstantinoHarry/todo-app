@@ -66,7 +66,11 @@ sessionStore.on('error', (error) => {
 });
 
 if (isProduction) {
-  app.set('trust proxy', appConfig.trustProxy);
+  const trustProxyValue =
+    appConfig.trustProxy === '1' || appConfig.trustProxy === 1 || appConfig.trustProxy === true
+      ? 1
+      : appConfig.trustProxy;
+  app.set('trust proxy', trustProxyValue);
 }
 
 app.set('view engine', 'ejs');
@@ -114,6 +118,7 @@ app.use(
     name: securityConfig.sessionName,
     secret: securityConfig.sessionSecret,
     store: sessionStore,
+    proxy: isProduction,
     resave: false,
     saveUninitialized: false,
     rolling: true,
