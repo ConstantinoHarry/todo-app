@@ -398,20 +398,24 @@
                   <% visibleTodos.forEach(function(todo) { %>
                     <li
                       class="todo-item <%= selectedView === 'completed' ? 'completed' : '' %> <%= selectedView === 'required' ? 'todo-item--editable' : '' %>"
-                      <%= selectedView === 'required' ? 'data-open-edit-task-modal="true"' : '' %>
-                      <%= selectedView === 'required' ? 'data-todo-id="' + todo.id + '"' : '' %>
-                      <%= selectedView === 'required' ? 'data-todo-text="' + todo.text + '"' : '' %>
-                      <%= selectedView === 'required' ? 'data-todo-energy="' + todo.energy_level + '"' : '' %>
-                      <%= selectedView === 'required' ? 'data-todo-deadline="' + toDatetimeLocal(todo.deadline) + '"' : '' %>
+                      <% if (selectedView === 'required') { %>
+                        data-open-edit-task-modal="true"
+                        data-todo-id="<%= todo.id %>"
+                        data-todo-text="<%= todo.text %>"
+                        data-todo-energy="<%= todo.energy_level %>"
+                        data-todo-deadline="<%= toDatetimeLocal(todo.deadline) %>"
+                      <% } %>
                     >
                       <div
                         class="todo-main todo-main-edit-trigger <%= selectedView === 'required' ? 'todo-main-editable' : '' %>"
-                        <%= selectedView === 'required' ? 'data-open-edit-task-modal="true"' : '' %>
-                        <%= selectedView === 'required' ? 'data-todo-id="' + todo.id + '"' : '' %>
-                        <%= selectedView === 'required' ? 'data-todo-text="' + todo.text + '"' : '' %>
-                        <%= selectedView === 'required' ? 'data-todo-energy="' + todo.energy_level + '"' : '' %>
-                        <%= selectedView === 'required' ? 'data-todo-deadline="' + toDatetimeLocal(todo.deadline) + '"' : '' %>
-                        <%= selectedView === 'required' ? 'tabindex="0"' : '' %>
+                        <% if (selectedView === 'required') { %>
+                          data-open-edit-task-modal="true"
+                          data-todo-id="<%= todo.id %>"
+                          data-todo-text="<%= todo.text %>"
+                          data-todo-energy="<%= todo.energy_level %>"
+                          data-todo-deadline="<%= toDatetimeLocal(todo.deadline) %>"
+                          tabindex="0"
+                        <% } %>
                       >
                         <form action="/todos/<%= todo.id %>/toggle?_method=PATCH" method="POST" class="inline-form">
                           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
