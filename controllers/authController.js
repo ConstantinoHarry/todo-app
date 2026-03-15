@@ -23,6 +23,18 @@ function regenerateSession(req) {
   });
 }
 
+function saveSession(req) {
+  return new Promise((resolve, reject) => {
+    req.session.save((error) => {
+      if (error) {
+        return reject(error);
+      }
+
+      return resolve();
+    });
+  });
+}
+
 function renderLogin(req, res) {
   if (req.session && req.session.user) {
     return res.redirect('/');
@@ -133,6 +145,7 @@ function handleSocialAuthCallback(strategyName, providerLabel) {
           email: user.email,
           loginAt: new Date().toISOString()
         };
+        await saveSession(req);
         return res.redirect('/?success=' + encodeURIComponent(`Logged in with ${providerLabel}.`));
       } catch (sessionError) {
         console.error(`${providerLabel} session setup failed:`, sessionError);
@@ -216,6 +229,7 @@ async function login(req, res) {
       email: user.email,
       loginAt: new Date().toISOString()
     };
+    await saveSession(req);
 
     return res.redirect('/?success=' + encodeURIComponent('Login successful. Welcome back.'));
   } catch (error) {
