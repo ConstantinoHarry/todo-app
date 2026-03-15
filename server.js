@@ -14,7 +14,6 @@ const todoRoutes = require('./routes/todos');
 const { requireAuth } = require('./middleware/auth');
 const configurePassport = require('./config/passport');
 const { startReminderScheduler } = require('./services/reminderService');
-const { ensureCoreSchema } = require('./services/schemaService');
 const pool = require('./config/db');
 const {
   getAppConfig,
@@ -174,17 +173,7 @@ app.use((req, res) => {
   });
 });
 
-async function startServer() {
-  try {
-    await ensureCoreSchema();
-  } catch (error) {
-    console.error('Schema bootstrap warning (continuing startup):', error);
-  }
-
-  app.listen(PORT, () => {
-    console.log(`Server running on ${appConfig.appBaseUrl}`);
-    startReminderScheduler();
-  });
-}
-
-startServer();
+app.listen(PORT, () => {
+  console.log(`Server running on ${appConfig.appBaseUrl}`);
+  startReminderScheduler();
+});
