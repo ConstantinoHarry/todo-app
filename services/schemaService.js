@@ -31,6 +31,36 @@ async function ensureColumn(tableName, columnName, definitionSql) {
   await pool.query(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definitionSql}`);
 }
 
+async function getColumnType(tableName, columnName) {
+  const [rows] = await pool.query(
+    `
+    SELECT COLUMN_TYPE AS columnType
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = ?
+      AND COLUMN_NAME = ?
+    LIMIT 1
+    `,
+    [tableName, columnName]
+  );
+
+  if (!rows.length || !rows[0].columnType) {
+    return '';
+  }
+
+  return String(rows[0].columnType).toLowerCase();
+}
+
+async function ensureSessionExpiresColumnType() {
+  const columnType = await getColumnType('sessions', 'expires');
+
+  if (columnType.includes('bigint')) {
+    return;
+  }
+
+  await pool.query('ALTER TABLE sessions MODIFY COLUMN expires BIGINT(20) UNSIGNED NOT NULL');
+}
+
 async function indexExists(tableName, indexName) {
   const [rows] = await pool.query(
     `
@@ -146,12 +176,14 @@ async function ensureCoreSchema() {
     `
     CREATE TABLE IF NOT EXISTS sessions (
       session_id VARCHAR(128) COLLATE utf8mb4_bin NOT NULL,
-      expires INT(11) UNSIGNED NOT NULL,
+      expires BIGINT(20) UNSIGNED NOT NULL,
       data MEDIUMTEXT COLLATE utf8mb4_bin,
       PRIMARY KEY (session_id)
     ) ENGINE=InnoDB
     `
   );
+
+  await ensureSessionExpiresColumnType();
 
   await ensureIndex('todos', 'idx_todos_user_id', 'user_id');
   await ensureIndex('subtasks', 'idx_subtasks_todo_id', 'todo_id');
