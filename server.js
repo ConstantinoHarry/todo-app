@@ -177,15 +177,14 @@ app.use((req, res) => {
 async function startServer() {
   try {
     await ensureCoreSchema();
-
-    app.listen(PORT, () => {
-      console.log(`Server running on ${appConfig.appBaseUrl}`);
-      startReminderScheduler();
-    });
   } catch (error) {
-    console.error('Failed to initialize database schema:', error);
-    process.exit(1);
+    console.error('Schema bootstrap warning (continuing startup):', error);
   }
+
+  app.listen(PORT, () => {
+    console.log(`Server running on ${appConfig.appBaseUrl}`);
+    startReminderScheduler();
+  });
 }
 
 startServer();
