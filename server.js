@@ -14,6 +14,7 @@ const todoRoutes = require('./routes/todos');
 const { requireAuth } = require('./middleware/auth');
 const configurePassport = require('./config/passport');
 const { startReminderScheduler } = require('./services/reminderService');
+const { ensureCoreSchema } = require('./services/schemaService');
 const pool = require('./config/db');
 const {
   getAppConfig,
@@ -173,7 +174,18 @@ app.use((req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on ${appConfig.appBaseUrl}`);
-  startReminderScheduler();
-});
+async function startServer() {
+  try {
+    await ensureCoreSchema();
+
+    app.listen(PORT, () => {
+      console.log(`Server running on ${appConfig.appBaseUrl}`);
+      startReminderScheduler();
+    });
+  } catch (error) {
+    console.error('Failed to initialize database schema:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
