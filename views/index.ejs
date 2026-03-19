@@ -92,6 +92,13 @@
           </div>
 
           <div class="hero-metrics-actions">
+            <form action="/reminders/test-send" method="POST" class="inline-form">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <input type="hidden" name="returnTo" value="<%= returnTo %>" />
+              <button type="submit" class="btn btn-ghost" title="Temporary test button for reminder delivery">
+                Test Reminder Email
+              </button>
+            </form>
             <button
               type="button"
               class="btn btn-ghost focus-mode-btn"

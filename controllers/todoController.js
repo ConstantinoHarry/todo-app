@@ -14,6 +14,7 @@ const {
   toggleSubtask: toggleSubtaskModel,
   deleteSubtask: deleteSubtaskModel
 } = require('../models/subtaskModel');
+const { runDueTodayRemindersNow } = require('../services/reminderService');
 
 const ALLOWED_ENERGY_LEVELS = ['high', 'medium', 'low'];
 const ALLOWED_LIST_VIEWS = ['required', 'completed', 'calendar'];
@@ -836,6 +837,24 @@ async function clearCompletedTodos(req, res) {
   }
 }
 
+async function triggerReminderTestSend(req, res) {
+  const returnTo = getSafeReturnTo(req.body.returnTo || '/');
+
+  try {
+    const userId = req.session && req.session.user ? req.session.user.id : null;
+    if (!userId) {
+      return res.redirect('/login?error=' + encodeURIComponent('Please login to continue.'));
+    }
+
+    const result = await runDueTodayRemindersNow();
+    const message = `Reminder test run complete. Date: ${result.dateKey}. Eligible users: ${result.eligibleUsers}. Processed users: ${result.processedUsers}.`;
+    return res.redirect(addMessageToPath(returnTo, 'success', message));
+  } catch (error) {
+    console.error('Failed to trigger reminder test run:', error);
+    return res.redirect(addMessageToPath(returnTo, 'error', `Reminder test failed: ${error.message || 'unknown error'}`));
+  }
+}
+
 async function createSubtask(req, res) {
   const returnTo = getSafeReturnTo(req.body.returnTo || '/');
   const expectsJson = wantsJsonResponse(req);
@@ -1007,6 +1026,7 @@ module.exports = {
   applyCarryoverAction,
   deleteTodo,
   clearCompletedTodos,
+  triggerReminderTestSend,
   createSubtask,
   toggleSubtask,
   deleteSubtask
