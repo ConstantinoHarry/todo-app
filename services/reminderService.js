@@ -179,6 +179,34 @@ async function sendMailWithIpv4Fallback(mailConfig, payload, content) {
   });
 }
 
+function isGmailHost(hostname) {
+  return typeof hostname === 'string' && hostname.toLowerCase().includes('gmail.com');
+}
+
+async function sendMailWithGmailTlsFallback(mailConfig, payload, content) {
+  const gmailTlsTransporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    connectionTimeout: mailConfig.connectionTimeout,
+    greetingTimeout: mailConfig.greetingTimeout,
+    socketTimeout: mailConfig.socketTimeout,
+    auth: {
+      user: mailConfig.user,
+      pass: mailConfig.pass
+    },
+    family: 4
+  });
+
+  await gmailTlsTransporter.sendMail({
+    from: mailConfig.from,
+    to: payload.email,
+    subject: `Reminder: ${payload.tasks.length} task(s) due today`,
+    text: content.text,
+    html: content.html
+  });
+}
+
 function getMissingMailConfigFields(mailConfig) {
   const missing = [];
 
@@ -229,7 +257,19 @@ async function sendDailyDueTodayReminders(transporter, mailConfig, reminderConfi
       console.warn(
         `[reminders] Primary SMTP send failed for ${payload.email}. Retrying with IPv4 fallback for ${mailConfig.host}.`
       );
-      await sendMailWithIpv4Fallback(mailConfig, payload, content);
+
+      try {
+        await sendMailWithIpv4Fallback(mailConfig, payload, content);
+      } catch (ipv4Error) {
+        if (!isSmtpNetworkError(ipv4Error) || !isGmailHost(mailConfig.host)) {
+          throw ipv4Error;
+        }
+
+        console.warn(
+          `[reminders] IPv4 SMTP fallback also failed for ${payload.email}. Retrying Gmail TLS fallback on port 465.`
+        );
+        await sendMailWithGmailTlsFallback(mailConfig, payload, content);
+      }
     }
 
     await markReminderSent(payload.userId, dateKey, payload.tasks.length);
