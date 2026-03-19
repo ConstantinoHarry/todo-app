@@ -1,26 +1,5 @@
 const pool = require('../config/db');
 
-function getDateRangeBounds(dateKey) {
-  const start = new Date(`${dateKey}T00:00:00`);
-  const end = new Date(`${dateKey}T00:00:00`);
-  end.setDate(end.getDate() + 1);
-
-  const toSql = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-  };
-
-  return {
-    start: toSql(start),
-    end: toSql(end)
-  };
-}
-
 function groupRowsByUser(rows) {
   const userMap = new Map();
 
@@ -68,8 +47,6 @@ function groupRowsByUser(rows) {
 }
 
 async function getUnsentDueTodayReminderPayloads(dateKey) {
-  const { start, end } = getDateRangeBounds(dateKey);
-
   const [rows] = await pool.query(
     `
     SELECT
@@ -88,8 +65,7 @@ async function getUnsentDueTodayReminderPayloads(dateKey) {
     WHERE
       t.completed = FALSE
       AND t.deadline IS NOT NULL
-      AND t.deadline >= ?
-      AND t.deadline < ?
+      AND DATE(t.deadline) = ?
       AND NOT EXISTS (
         SELECT 1
         FROM email_reminder_logs l
@@ -97,7 +73,7 @@ async function getUnsentDueTodayReminderPayloads(dateKey) {
       )
     ORDER BY u.id ASC, t.deadline ASC, t.id ASC, s.created_at ASC
     `,
-    [start, end, dateKey]
+    [dateKey, dateKey]
   );
 
   return groupRowsByUser(rows);

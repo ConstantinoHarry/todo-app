@@ -1,14 +1,22 @@
 function parseBoolean(value, defaultValue = false) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return value !== 0;
+  }
+
   if (typeof value !== 'string') {
     return defaultValue;
   }
 
   const normalized = value.trim().toLowerCase();
-  if (normalized === 'true') {
+  if (['true', '1', 'yes', 'on'].includes(normalized)) {
     return true;
   }
 
-  if (normalized === 'false') {
+  if (['false', '0', 'no', 'off'].includes(normalized)) {
     return false;
   }
 
@@ -130,27 +138,70 @@ function getSecurityConfig() {
 }
 
 function getMailConfig() {
-  const normalizedHost = typeof process.env.SMTP_HOST === 'string' ? process.env.SMTP_HOST.trim() : '';
-  const normalizedUser = typeof process.env.SMTP_USER === 'string' ? process.env.SMTP_USER.trim() : '';
-  const normalizedPassRaw = typeof process.env.SMTP_PASS === 'string' ? process.env.SMTP_PASS.trim() : '';
+  const normalizedHost =
+    typeof process.env.SMTP_HOST === 'string'
+      ? process.env.SMTP_HOST.trim()
+      : typeof process.env.MAIL_HOST === 'string'
+        ? process.env.MAIL_HOST.trim()
+        : '';
+  const normalizedUser =
+    typeof process.env.SMTP_USER === 'string'
+      ? process.env.SMTP_USER.trim()
+      : typeof process.env.SMTP_USERNAME === 'string'
+        ? process.env.SMTP_USERNAME.trim()
+        : typeof process.env.MAIL_USER === 'string'
+          ? process.env.MAIL_USER.trim()
+          : '';
+  const normalizedPassRaw =
+    typeof process.env.SMTP_PASS === 'string'
+      ? process.env.SMTP_PASS.trim()
+      : typeof process.env.SMTP_PASSWORD === 'string'
+        ? process.env.SMTP_PASSWORD.trim()
+        : typeof process.env.MAIL_PASSWORD === 'string'
+          ? process.env.MAIL_PASSWORD.trim()
+          : '';
   const normalizedPass = normalizedPassRaw.replace(/\s+/g, '');
-  const normalizedFrom = typeof process.env.SMTP_FROM === 'string' ? process.env.SMTP_FROM.trim() : '';
-  const secureDefault = parseNumber(process.env.SMTP_PORT, 587) === 465;
+  const normalizedFrom =
+    typeof process.env.SMTP_FROM === 'string'
+      ? process.env.SMTP_FROM.trim()
+      : typeof process.env.MAIL_FROM === 'string'
+        ? process.env.MAIL_FROM.trim()
+        : '';
+  const portValue = process.env.SMTP_PORT || process.env.MAIL_PORT;
+  const secureValue = process.env.SMTP_SECURE || process.env.MAIL_SECURE;
+  const secureDefault = parseNumber(portValue, 587) === 465;
+  const familyRaw = parseNumber(process.env.SMTP_FAMILY || process.env.MAIL_FAMILY, NaN);
+  const family = familyRaw === 4 || familyRaw === 6 ? familyRaw : isProduction() ? 4 : undefined;
+  const connectionTimeout = parseNumber(process.env.SMTP_CONNECTION_TIMEOUT_MS, 20 * 1000);
+  const greetingTimeout = parseNumber(process.env.SMTP_GREETING_TIMEOUT_MS, 15 * 1000);
+  const socketTimeout = parseNumber(process.env.SMTP_SOCKET_TIMEOUT_MS, 30 * 1000);
 
   return {
     host: normalizedHost,
-    port: parseNumber(process.env.SMTP_PORT, 587),
-    secure: parseBoolean(process.env.SMTP_SECURE, secureDefault),
+    port: parseNumber(portValue, 587),
+    secure: parseBoolean(secureValue, secureDefault),
     user: normalizedUser,
     pass: normalizedPass,
-    from: normalizedFrom
+    from: normalizedFrom,
+    family,
+    connectionTimeout,
+    greetingTimeout,
+    socketTimeout
   };
 }
 
 function getReminderConfig() {
+  const timezone =
+    typeof process.env.REMINDER_TIMEZONE === 'string' && process.env.REMINDER_TIMEZONE.trim()
+      ? process.env.REMINDER_TIMEZONE.trim()
+      : typeof process.env.TZ === 'string' && process.env.TZ.trim()
+        ? process.env.TZ.trim()
+        : 'UTC';
+
   return {
-    enabled: parseBoolean(process.env.REMINDER_ENABLED, false),
-    checkIntervalMs: parseNumber(process.env.REMINDER_CHECK_INTERVAL_MS, 15 * 60 * 1000)
+    enabled: parseBoolean(process.env.REMINDER_ENABLED || process.env.EMAIL_REMINDER_ENABLED, false),
+    checkIntervalMs: parseNumber(process.env.REMINDER_CHECK_INTERVAL_MS, 15 * 60 * 1000),
+    timezone
   };
 }
 

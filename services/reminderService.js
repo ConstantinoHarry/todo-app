@@ -5,11 +5,15 @@ const {
   markReminderSent
 } = require('../models/reminderModel');
 
-function getLocalDateKey(date = new Date()) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+function getLocalDateKey(date = new Date(), timezone = 'UTC') {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+
+  return formatter.format(date);
 }
 
 function formatDeadline(deadline) {
@@ -107,19 +111,50 @@ function createTransporter(mailConfig) {
     return null;
   }
 
-  return nodemailer.createTransport({
+  const transportConfig = {
     host: mailConfig.host,
     port: mailConfig.port,
     secure: mailConfig.secure,
+    connectionTimeout: mailConfig.connectionTimeout,
+    greetingTimeout: mailConfig.greetingTimeout,
+    socketTimeout: mailConfig.socketTimeout,
     auth: {
       user: mailConfig.user,
       pass: mailConfig.pass
     }
-  });
+  };
+
+  if (mailConfig.family === 4 || mailConfig.family === 6) {
+    transportConfig.family = mailConfig.family;
+  }
+
+  return nodemailer.createTransport(transportConfig);
 }
 
-async function sendDailyDueTodayReminders(transporter, mailConfig) {
-  const dateKey = getLocalDateKey();
+function getMissingMailConfigFields(mailConfig) {
+  const missing = [];
+
+  if (!mailConfig.host) {
+    missing.push('SMTP_HOST');
+  }
+
+  if (!mailConfig.user) {
+    missing.push('SMTP_USER');
+  }
+
+  if (!mailConfig.pass) {
+    missing.push('SMTP_PASS');
+  }
+
+  if (!mailConfig.from) {
+    missing.push('SMTP_FROM');
+  }
+
+  return missing;
+}
+
+async function sendDailyDueTodayReminders(transporter, mailConfig, reminderConfig) {
+  const dateKey = getLocalDateKey(new Date(), reminderConfig.timezone);
   const payloads = await getUnsentDueTodayReminderPayloads(dateKey);
   let processedUsers = 0;
 
@@ -142,9 +177,9 @@ async function sendDailyDueTodayReminders(transporter, mailConfig) {
     processedUsers += 1;
   }
 
-  if (payloads.length > 0) {
-    console.log(`[reminders] Processed due-today reminders for ${payloads.length} user(s) on ${dateKey}.`);
-  }
+  console.log(
+    `[reminders] Run completed for ${dateKey} (${reminderConfig.timezone}). Eligible users: ${payloads.length}; processed users: ${processedUsers}.`
+  );
 
   return {
     dateKey,
@@ -155,13 +190,15 @@ async function sendDailyDueTodayReminders(transporter, mailConfig) {
 
 async function runDueTodayRemindersNow() {
   const mailConfig = getMailConfig();
+  const reminderConfig = getReminderConfig();
   const transporter = createTransporter(mailConfig);
 
   if (!transporter) {
-    throw new Error('Missing SMTP configuration for reminder send.');
+    const missing = getMissingMailConfigFields(mailConfig);
+    throw new Error(`Missing SMTP configuration for reminder send: ${missing.join(', ') || 'unknown fields'}.`);
   }
 
-  return sendDailyDueTodayReminders(transporter, mailConfig);
+  return sendDailyDueTodayReminders(transporter, mailConfig, reminderConfig);
 }
 
 function startReminderScheduler() {
@@ -176,7 +213,10 @@ function startReminderScheduler() {
   const transporter = createTransporter(mailConfig);
 
   if (!transporter) {
-    console.warn('[reminders] Missing SMTP configuration. Reminder scheduler not started.');
+    const missing = getMissingMailConfigFields(mailConfig);
+    console.warn(
+      `[reminders] Missing SMTP configuration (${missing.join(', ')}). Reminder scheduler not started.`
+    );
     return;
   }
 
@@ -189,9 +229,16 @@ function startReminderScheduler() {
 
     isRunning = true;
     try {
-      await sendDailyDueTodayReminders(transporter, mailConfig);
+      await sendDailyDueTodayReminders(transporter, mailConfig, reminderConfig);
     } catch (error) {
       console.error('[reminders] Failed to send due-today reminders:', error);
+
+      if (error && (error.code === 'ESOCKET' || error.code === 'ETIMEDOUT')) {
+        console.error(
+          `[reminders] SMTP network error (host=${mailConfig.host}, port=${mailConfig.port}, family=${mailConfig.family || 'auto'}). ` +
+            'If your host resolves to IPv6 on Railway, set SMTP_FAMILY=4.'
+        );
+      }
     } finally {
       isRunning = false;
     }
@@ -199,7 +246,9 @@ function startReminderScheduler() {
 
   runCycle();
   setInterval(runCycle, reminderConfig.checkIntervalMs);
-  console.log(`[reminders] Scheduler started. Interval: ${reminderConfig.checkIntervalMs}ms`);
+  console.log(
+    `[reminders] Scheduler started. Interval: ${reminderConfig.checkIntervalMs}ms. Timezone: ${reminderConfig.timezone}`
+  );
 }
 
 module.exports = {
