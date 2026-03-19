@@ -10,7 +10,6 @@ router.patch('/todos/:id/toggle', todoController.toggleTodo);
 router.patch('/todos/:id', todoController.updateTodo);
 router.delete('/todos/:id', todoController.deleteTodo);
 router.post('/todos/clear-completed', todoController.clearCompletedTodos);
-router.post('/reminders/test-send', todoController.triggerReminderTestSend);
 
 // Subtask routes
 router.post('/todos/:id/subtasks', todoController.createSubtask);

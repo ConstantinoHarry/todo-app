@@ -14,9 +14,6 @@ const {
   toggleSubtask: toggleSubtaskModel,
   deleteSubtask: deleteSubtaskModel
 } = require('../models/subtaskModel');
-const { runDueTodayRemindersNow } = require('../services/reminderService');
-
-let isReminderTestRunning = false;
 
 const ALLOWED_ENERGY_LEVELS = ['high', 'medium', 'low'];
 const ALLOWED_LIST_VIEWS = ['required', 'completed', 'calendar'];
@@ -839,48 +836,6 @@ async function clearCompletedTodos(req, res) {
   }
 }
 
-async function triggerReminderTestSend(req, res) {
-  const returnTo = getSafeReturnTo(req.body.returnTo || '/');
-
-  try {
-    const userId = req.session && req.session.user ? req.session.user.id : null;
-    if (!userId) {
-      return res.redirect('/login?error=' + encodeURIComponent('Please login to continue.'));
-    }
-
-    if (isReminderTestRunning) {
-      return res.redirect(addMessageToPath(returnTo, 'error', 'Reminder test is already running. Please wait and check logs.'));
-    }
-
-    isReminderTestRunning = true;
-    const initiatedBy = req.session && req.session.user ? req.session.user.email : 'unknown-user';
-
-    void (async () => {
-      try {
-        const result = await runDueTodayRemindersNow();
-        console.log(
-          `[reminders] Manual test completed by ${initiatedBy}. Date: ${result.dateKey}; eligible users: ${result.eligibleUsers}; processed users: ${result.processedUsers}.`
-        );
-      } catch (error) {
-        console.error('[reminders] Manual test failed:', error);
-      } finally {
-        isReminderTestRunning = false;
-      }
-    })();
-
-    return res.redirect(
-      addMessageToPath(
-        returnTo,
-        'success',
-        'Reminder test started in background. Check logs for final result.'
-      )
-    );
-  } catch (error) {
-    console.error('Failed to trigger reminder test run:', error);
-    return res.redirect(addMessageToPath(returnTo, 'error', `Reminder test failed: ${error.message || 'unknown error'}`));
-  }
-}
-
 async function createSubtask(req, res) {
   const returnTo = getSafeReturnTo(req.body.returnTo || '/');
   const expectsJson = wantsJsonResponse(req);
@@ -1052,7 +1007,6 @@ module.exports = {
   applyCarryoverAction,
   deleteTodo,
   clearCompletedTodos,
-  triggerReminderTestSend,
   createSubtask,
   toggleSubtask,
   deleteSubtask
