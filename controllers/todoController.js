@@ -16,6 +16,8 @@ const {
 } = require('../models/subtaskModel');
 const { runDueTodayRemindersNow } = require('../services/reminderService');
 
+let isReminderTestRunning = false;
+
 const ALLOWED_ENERGY_LEVELS = ['high', 'medium', 'low'];
 const ALLOWED_LIST_VIEWS = ['required', 'completed', 'calendar'];
 const ALLOWED_ENERGY_FILTERS = ['all', ...ALLOWED_ENERGY_LEVELS];
@@ -846,9 +848,33 @@ async function triggerReminderTestSend(req, res) {
       return res.redirect('/login?error=' + encodeURIComponent('Please login to continue.'));
     }
 
-    const result = await runDueTodayRemindersNow();
-    const message = `Reminder test run complete. Date: ${result.dateKey}. Eligible users: ${result.eligibleUsers}. Processed users: ${result.processedUsers}.`;
-    return res.redirect(addMessageToPath(returnTo, 'success', message));
+    if (isReminderTestRunning) {
+      return res.redirect(addMessageToPath(returnTo, 'error', 'Reminder test is already running. Please wait and check logs.'));
+    }
+
+    isReminderTestRunning = true;
+    const initiatedBy = req.session && req.session.user ? req.session.user.email : 'unknown-user';
+
+    void (async () => {
+      try {
+        const result = await runDueTodayRemindersNow();
+        console.log(
+          `[reminders] Manual test completed by ${initiatedBy}. Date: ${result.dateKey}; eligible users: ${result.eligibleUsers}; processed users: ${result.processedUsers}.`
+        );
+      } catch (error) {
+        console.error('[reminders] Manual test failed:', error);
+      } finally {
+        isReminderTestRunning = false;
+      }
+    })();
+
+    return res.redirect(
+      addMessageToPath(
+        returnTo,
+        'success',
+        'Reminder test started in background. Check logs for final result.'
+      )
+    );
   } catch (error) {
     console.error('Failed to trigger reminder test run:', error);
     return res.redirect(addMessageToPath(returnTo, 'error', `Reminder test failed: ${error.message || 'unknown error'}`));

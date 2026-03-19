@@ -92,7 +92,12 @@
           </div>
 
           <div class="hero-metrics-actions">
-            <form action="/reminders/test-send" method="POST" class="inline-form">
+            <form
+              action="/reminders/test-send"
+              method="POST"
+              class="inline-form"
+              onsubmit="var btn=this.querySelector('button[type=submit]'); if(btn){btn.disabled=true; btn.textContent='Starting...';}"
+            >
               <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
               <input type="hidden" name="returnTo" value="<%= returnTo %>" />
               <button type="submit" class="btn btn-ghost" title="Temporary test button for reminder delivery">
