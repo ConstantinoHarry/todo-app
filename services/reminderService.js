@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const dns = require('node:dns').promises;
 const { getMailConfig, getReminderConfig } = require('../config/env');
 const {
   getUnsentDueTodayReminderPayloads,
@@ -131,6 +132,53 @@ function createTransporter(mailConfig) {
   return nodemailer.createTransport(transportConfig);
 }
 
+function isSmtpNetworkError(error) {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  return (
+    error.code === 'ESOCKET' ||
+    error.code === 'ETIMEDOUT' ||
+    error.code === 'ENETUNREACH' ||
+    error.command === 'CONN'
+  );
+}
+
+async function sendMailWithIpv4Fallback(mailConfig, payload, content) {
+  const ipv4Addresses = await dns.resolve4(mailConfig.host);
+
+  if (!Array.isArray(ipv4Addresses) || ipv4Addresses.length === 0) {
+    throw new Error(`No IPv4 addresses found for SMTP host: ${mailConfig.host}`);
+  }
+
+  const ipv4Host = ipv4Addresses[0];
+  const fallbackTransporter = nodemailer.createTransport({
+    host: ipv4Host,
+    port: mailConfig.port,
+    secure: mailConfig.secure,
+    connectionTimeout: mailConfig.connectionTimeout,
+    greetingTimeout: mailConfig.greetingTimeout,
+    socketTimeout: mailConfig.socketTimeout,
+    auth: {
+      user: mailConfig.user,
+      pass: mailConfig.pass
+    },
+    tls: {
+      // Preserve TLS host verification when connecting via an IPv4 literal.
+      servername: mailConfig.host
+    }
+  });
+
+  await fallbackTransporter.sendMail({
+    from: mailConfig.from,
+    to: payload.email,
+    subject: `Reminder: ${payload.tasks.length} task(s) due today`,
+    text: content.text,
+    html: content.html
+  });
+}
+
 function getMissingMailConfigFields(mailConfig) {
   const missing = [];
 
@@ -165,13 +213,24 @@ async function sendDailyDueTodayReminders(transporter, mailConfig, reminderConfi
 
     const content = buildReminderEmailContent(payload.tasks);
 
-    await transporter.sendMail({
-      from: mailConfig.from,
-      to: payload.email,
-      subject: `Reminder: ${payload.tasks.length} task(s) due today`,
-      text: content.text,
-      html: content.html
-    });
+    try {
+      await transporter.sendMail({
+        from: mailConfig.from,
+        to: payload.email,
+        subject: `Reminder: ${payload.tasks.length} task(s) due today`,
+        text: content.text,
+        html: content.html
+      });
+    } catch (error) {
+      if (!isSmtpNetworkError(error)) {
+        throw error;
+      }
+
+      console.warn(
+        `[reminders] Primary SMTP send failed for ${payload.email}. Retrying with IPv4 fallback for ${mailConfig.host}.`
+      );
+      await sendMailWithIpv4Fallback(mailConfig, payload, content);
+    }
 
     await markReminderSent(payload.userId, dateKey, payload.tasks.length);
     processedUsers += 1;
@@ -233,10 +292,10 @@ function startReminderScheduler() {
     } catch (error) {
       console.error('[reminders] Failed to send due-today reminders:', error);
 
-      if (error && (error.code === 'ESOCKET' || error.code === 'ETIMEDOUT')) {
+      if (isSmtpNetworkError(error)) {
         console.error(
           `[reminders] SMTP network error (host=${mailConfig.host}, port=${mailConfig.port}, family=${mailConfig.family || 'auto'}). ` +
-            'If your host resolves to IPv6 on Railway, set SMTP_FAMILY=4.'
+            'If your host resolves to IPv6 on Railway, keep SMTP_FAMILY=4 and verify outbound SMTP access on your plan/provider.'
         );
       }
     } finally {
